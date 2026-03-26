@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- circle background -->
+  <circle cx="100" cy="100" r="90" fill="url(#grad)" />
+
+  <!-- graph bars -->
+  <rect x="60" y="110" width="15" height="30" fill="white"/>
+  <rect x="85" y="95" width="15" height="45" fill="white"/>
+  <rect x="110" y="80" width="15" height="60" fill="white"/>
+
+  <!-- tracking line -->
+  <polyline 
+    points="60,110 92,95 117,80 140,70"
+    fill="none"
+    stroke="white"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- dots -->
+  <circle cx="60" cy="110" r="4" fill="white"/>
+  <circle cx="92" cy="95" r="4" fill="white"/>
+  <circle cx="117" cy="80" r="4" fill="white"/>
+  <circle cx="140" cy="70" r="4" fill="white"/>
+</svg>

@@ -1,0 +1,30 @@
+services:
+  nginx:
+    build:
+      context: ./apps
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ./apps/api
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    command: sh -c "npx prisma migrate deploy && npm start"
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: trackora
+      POSTGRES_PASSWORD: trackora
+      POSTGRES_DB: trackora
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

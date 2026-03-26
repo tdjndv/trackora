@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+model StripeWebhookEvent {
+  id String @id
+  type String
+  processedAt DateTime @default(now())
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  password String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  accounts Account[]
+  transactions Transaction[]
+
+  stripe_customer_id String? @unique
+  stripe_subscription_id String? @unique
+
+  plan Plan @default(FREE)
+
+  subscription_status String?
+  current_period_end DateTime?
+  cancel_at_period_end Boolean @default(false)
+
+  has_used_trial Boolean @default(false)
+
+  @@map("users")
+}
+
+model Account {
+  id String @id @default(cuid())
+  user_id String
+  name String
+  type AccountType
+  currency String @default("CAD")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  transactions Transaction[]
+
+  @@index([user_id])
+  @@map("accounts")
+}
+
+model Transaction {
+  id String @id @default(cuid())
+  user_id String
+  account_id String
+  amount Int
+  note String?
+  category TransactionCategory @default(OTHER)
+  occurred_at DateTime
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [account_id], references: [id], onDelete: Cascade)
+
+  @@index([account_id])
+  @@index([account_id, created_at])
+  @@map("transactions")
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CASH
+  WECHAT
+  ZHIFUBAO
+  CREDIT_CARD
+  INVESTMENT
+  OTHER
+}
+
+enum TransactionCategory {
+  GROCERIES
+  RENT
+  TRANSPORT
+  EATING_OUT
+  SHOPPING
+  SUBSCRIPTION
+  HEALTH
+  ENTERTAINMENT
+  TRAVEL
+  SALARY
+  BONUS
+  INVESTMENT
+  TRANSFER
+  OTHER
+}

@@ -1,0 +1,18 @@
+{
+  "name": "trackora",
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api -c auto \"npm run dev -w web\" \"npm run dev -w api\"",
+    "build": "npm run build -w web",
+    "prisma:studio": "npm exec prisma studio -w api",
+    "prisma:migrate": "npm exec prisma migrate dev -w api",
+    "prisma:generate": "npm exec prisma generate -w api",
+    "prisma:reset": "npm exec prisma migrate reset -w api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
