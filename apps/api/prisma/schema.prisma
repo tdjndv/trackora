@@ -39,6 +39,9 @@ model User {
 
   has_used_trial Boolean @default(false)
 
+  most_recent_account_id String?
+  most_recent_account Account? @relation("UserRecentAccount", fields: [most_recent_account_id], references: [id])
+
   @@map("users")
 }
 
@@ -51,9 +54,9 @@ model Account {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  isDefault Boolean @default(false)
-
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  recent_for_users User[] @relation("UserRecentAccount")
 
   transactions Transaction[]
 
@@ -92,38 +95,25 @@ enum AccountType {
 }
 
 enum TransactionCategory {
-  // Essentials
   GROCERIES
   RENT
-  UTILITIES           // electricity, water, internet, phone
+  UTILITIES
   INSURANCE
-
-  // Lifestyle
   EATING_OUT
   SHOPPING
   ENTERTAINMENT
-  SUBSCRIPTION        // Netflix, Spotify, SaaS
-  HEALTH              // gym, pharmacy, doctor
-
-  // Transport & travel
-  TRANSPORT           // Uber, gas, transit
-  TRAVEL              // flights, hotels
-
-  // Income
+  SUBSCRIPTION
+  HEALTH
+  TRANSPORT
+  TRAVEL
   SALARY
   BONUS
   FREELANCE
-  INVESTMENT_INCOME   // dividends, interest
-
-  // Money movement
-  TRANSFER            // between own accounts
-  DEBT_PAYMENT        // credit card, loans
-
-  // Savings / investing
-  INVESTMENT          // buying stocks/crypto
+  INVESTMENT_INCOME
+  TRANSFER
+  DEBT_PAYMENT
+  INVESTMENT
   SAVINGS
-
-  // Misc
   GIFT
   EDUCATION
   OTHER

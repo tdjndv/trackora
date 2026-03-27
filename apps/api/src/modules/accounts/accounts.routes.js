@@ -13,7 +13,7 @@ import
         getAccountParamsSchema,
         putAccountBodySchema,
         getAccountsQuerySchema,
-        changeDefaultBodySchema
+        setRecentBodySchema
     } from "./accounts.schema.js"
 
 const router = Router()
@@ -21,8 +21,8 @@ const router = Router()
 router.get("/", requireAuth, validateQuery(getAccountsQuerySchema), asyncHandler(accountsController.getAccounts))
 router.post("/", requireAuth, validateBody(createAccountBodySchema), asyncHandler(accountsController.addAccount))
 
-router.get("/default", requireAuth, asyncHandler(accountsController.getDefault))
-router.post("/default", requireAuth, validateBody(changeDefaultBodySchema), asyncHandler(accountsController.changeDefault))
+router.get("/recent", requireAuth, asyncHandler(accountsController.getRecent))
+router.put("/recent", requireAuth, validateBody(setRecentBodySchema), asyncHandler(accountsController.setRecent))
 
 router.get("/:id", requireAuth, validateParams(getAccountParamsSchema), asyncHandler(accountsController.getAccount))
 router.put("/:id", requireAuth, validateParams(getAccountParamsSchema), validateBody(putAccountBodySchema), asyncHandler(accountsController.putAccount))

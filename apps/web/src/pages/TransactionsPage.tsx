@@ -15,143 +15,88 @@ import {
   formatCents,
   todayYYYYMMDD,
   toYYYYMMDD,
-  stringToCategory,
   getErrorMessage,
   enumToString
 } from "../utils/general.ts"
 
 import {
+  type FilterTransactionsForm,
   TRANSACTION_CATEGORIES,
-  type CreateFieldErrors,
-  type FilterFieldErrors,
-  type TransactionCategory,
-  type TransactionDTO
+  type TransactionDTO,
+  type DetailedAddTransactionForm,
+  type DetailedAddTransactionField,
+  type FilterTransactionsField
 } from "../types/transactions.ts"
 
-import { getDefaultAccount, listAccounts } from "../api/accounts"
 import type { PaginatedResponse } from "../types/general.ts"
 import LoadingPage from "./LoadingPage"
+import { useRecentAccountQuery } from "../hooks/queries/accounts.ts"
+import { useTransactionsQuery } from "../hooks/queries/transactions.ts"
 
 export default function TransactionsPage() {
   const queryClient = useQueryClient()
 
-  const [searchParams, setSearchParams] = useSearchParams()
+  const {data: recentAccount, isLoading} = useRecentAccountQuery()
 
-  const [createFieldErrors, setCreateFieldErrors] = useState<CreateFieldErrors>({})
-  const [filterFieldErrors, setFilterFieldErrors] = useState<FilterFieldErrors>({})
+  const [filterTransactionsData, setFilterTransactionsData] = useState<FilterTransactionsForm>({
+    note: "",
+    from: "",
+    to: "",
+    min_amount: "",
+    max_amount: "",
+    category: "",
+    limit: "10",
+    page: "1"
+  })
 
-  function clearCreateErrors() {
-    setCreateFieldErrors({})
+  function handleFilterTransactionsDataChange(field: FilterTransactionsField, value: string) {
+    setFilterTransactionsData(prev => ({...prev, [field]: value, page: field === "page" ? value : "1"}))
   }
 
-  function clearFilterErrors() {
-    setFilterFieldErrors({})
+  function resetFilterTransactionsData() {
+    setFilterTransactionsData({
+      note: "",
+      from: "",
+      to: "",
+      min_amount: "",
+      max_amount: "",
+      category: "",
+      limit: "10",
+      page: "1"
+    })
   }
 
-  const params = useMemo(() => {
-    const account_id = searchParams.get("account_id") ?? ""
-    const from = searchParams.get("from") ?? ""
-    const to = searchParams.get("to") ?? ""
-    const page = searchParams.get("page") ?? "1"
-    const limit = searchParams.get("limit") ?? "10"
-    const note = searchParams.get("note") ?? ""
-    const category = searchParams.get("category") ?? ""
-    const min_amount = searchParams.get("min_amount") ?? ""
-    const max_amount = searchParams.get("max_amount") ?? ""
+  const pageNum = Number(filterTransactionsData.page) || 1
+  const limitNum = Number(filterTransactionsData.limit) || 10
 
-    return { account_id, from, to, page, limit, note, category, min_amount, max_amount }
-  }, [searchParams])
+  const [draftFrom, setDraftFrom] = useState(filterTransactionsData.from)
+  const [draftTo, setDraftTo] = useState(filterTransactionsData.to)
 
-  const pageNum = Number(params.page) || 1
-  const limitNum = Number(params.limit) || 10
-
-  const toUndef = (v: string) => (v.trim() ? v : undefined)
-
-  const [draftFrom, setDraftFrom] = useState(params.from)
-  const [draftTo, setDraftTo] = useState(params.to)
-
-  useEffect(() => setDraftFrom(params.from), [params.from])
-  useEffect(() => setDraftTo(params.to), [params.to])
-
-  const setFilter = (key: string, value: string, { resetPage = true } = {}) => {
-    const next = new URLSearchParams(searchParams)
-    if (!value) next.delete(key)
-    else next.set(key, value)
-    if (resetPage) next.set("page", "1")
-    setSearchParams(next)
-  }
+  useEffect(() => setDraftFrom(filterTransactionsData.from), [filterTransactionsData.from])
+  useEffect(() => setDraftTo(filterTransactionsData.to), [filterTransactionsData.to])
 
   const setPage = (nextPage: number) => {
-    const next = new URLSearchParams(searchParams)
-    next.set("page", String(Math.max(1, nextPage)))
-    setSearchParams(next)
+    handleFilterTransactionsDataChange("page", String(Math.max(1, nextPage)))
   }
 
-  const clearAll = () => setSearchParams(new URLSearchParams())
-
-  const accountsQuery = useQuery({
-    queryKey: ["accounts"],
-    queryFn: () => listAccounts({}),
-    placeholderData: (prev) => prev,
+  const transactionsQuery = useTransactionsQuery({
+    account_id: recentAccount?.id ?? "",
+    from: filterTransactionsData.from,
+    to: filterTransactionsData.to,
+    page: filterTransactionsData.page,
+    limit: filterTransactionsData.limit,
+    note: filterTransactionsData.note,
+    category: filterTransactionsData.category,
+    min_amount: filterTransactionsData.min_amount,
+    max_amount: filterTransactionsData.max_amount,
   })
-  const accountsData = accountsQuery.data
-
-  const defaultAccountQuery = useQuery({
-    queryKey: ["default_account"],
-    queryFn: () => getDefaultAccount(),
-  })
-
-  const defaultAccount = defaultAccountQuery.data
-
-  const transactionsQuery = useQuery({
-    queryKey: ["transactions", params],
-    queryFn: () =>
-      listTransactions({
-        account_id: toUndef(params.account_id),
-        from: toUndef(params.from),
-        to: toUndef(params.to),
-        page: toUndef(params.page),
-        limit: toUndef(params.limit),
-        note: toUndef(params.note),
-        category: stringToCategory(params.category),
-        min_amount: toUndef(params.min_amount),
-        max_amount: toUndef(params.max_amount),
-      }),
-    placeholderData: (prev) => prev,
-    retry: 1
-  })
-
-  useEffect(() => {
-    if (transactionsQuery.isError) {
-      const error = transactionsQuery.error as any
-      const issues = error.response.data.issues
-
-      const fieldErrors: Record<string, string> = {}
-      for (const issue of issues) {
-        fieldErrors[issue.path[0]] = issue.message
-      }
-      setFilterFieldErrors(fieldErrors)
-    } else {
-      clearFilterErrors()
-    }
-  }, [transactionsQuery.isError, transactionsQuery.error])
 
   const txRes: PaginatedResponse<TransactionDTO> | undefined = transactionsQuery.data ?? undefined
   const transactions: TransactionDTO[] = txRes?.data ?? []
   const meta = txRes?.meta
 
-  const [createAccountId, setCreateAccountId] = useState<string>(params.account_id)
-  const [createAmount, setCreateAmount] = useState<string>("")
-  const [createNote, setCreateNote] = useState<string>("")
-  const [createCategory, setCreateCategory] = useState<TransactionCategory | "">("")
-  const [createOccurredAt, setCreateOccurredAt] = useState<string>(todayYYYYMMDD())
-
   const [quickNote, setQuickNote] = useState<string>("")
   const [quickAmount, setQuickAmount] = useState<string>("")
-
-  useEffect(() => {
-    if (params.account_id) setCreateAccountId(params.account_id)
-  }, [params.account_id])
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<TransactionDTO | null>(null)
@@ -159,7 +104,7 @@ export default function TransactionsPage() {
   const [editAccountId, setEditAccountId] = useState("")
   const [editAmount, setEditAmount] = useState("")
   const [editNote, setEditNote] = useState("")
-  const [editCategory, setEditCategory] = useState<TransactionCategory | "">("")
+  const [editCategory, setEditCategory] = useState<string>("")
   const [editOccurredAt, setEditOccurredAt] = useState(todayYYYYMMDD())
 
   const openEdit = (transaction: TransactionDTO) => {
@@ -181,17 +126,7 @@ export default function TransactionsPage() {
     mutationFn: createTransaction,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
-      setCreateAmount("")
-      setCreateNote("")
-      setCreateCategory("")
-      setCreateOccurredAt(todayYYYYMMDD())
-    },
-    onError: (error: any) => {
-      const fieldErrors: Record<string, string> = {}
-      for (const issue of error.response.data.issues) {
-        fieldErrors[issue.path[0]] = issue.message
-      }
-      setCreateFieldErrors(fieldErrors)
+      resetDetailedAddTransactionData()
     }
   })
 
@@ -219,19 +154,33 @@ export default function TransactionsPage() {
     },
   })
 
-  const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
+  const [detailedAddTransactionData, setDetailedAddTransactionData] = useState<DetailedAddTransactionForm>({
+    amount: "",
+    note: "",
+    occurred_at: "",
+    category: ""
+  })
+
+  function handleDetailedAddTransactionDataChange(field: DetailedAddTransactionField, value: string) {
+    setDetailedAddTransactionData(prev => ({...prev, [field]: value}))
+  }
+
+  function resetDetailedAddTransactionData() {
+    setDetailedAddTransactionData({
+      amount: "",
+      note: "",
+      occurred_at: "",
+      category: ""
+    })
+  }
+
+  const handleDetailedAddTransactionSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!createAccountId) return
-    if (!createCategory) return
 
-    clearCreateErrors()
-
+    if (recentAccount?.id) return
     createMutation.mutate({
-      account_id: createAccountId,
-      amount: createAmount,
-      note: createNote || undefined,
-      category: createCategory,
-      occurred_at: createOccurredAt,
+      ...detailedAddTransactionData,
+      account_id: recentAccount.id
     })
   }
 
@@ -239,10 +188,10 @@ export default function TransactionsPage() {
     e.preventDefault()
     if (!quickNote) return
     if (!quickAmount) return
-    if (!defaultAccount) return
+    if (!recentAccount.id) return
  
     quickAddMutation.mutate({
-      account_id: defaultAccount.id,
+      account_id: recentAccount.id,
       amount: quickAmount,
       note: quickNote
     })
@@ -289,7 +238,7 @@ export default function TransactionsPage() {
 
           <button
             type="button"
-            onClick={clearAll}
+            onClick={resetFilterTransactionsData}
             className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
           >
             Clear all filters
@@ -308,30 +257,30 @@ export default function TransactionsPage() {
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Quick add</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Just note + amount for fast entry. We’ll use your default account automatically.
+                Just note + amount for fast entry. We’ll use your most recent account automatically.
               </p>
             </div>
 
             <div className="flex items-center">
-              {defaultAccountQuery.isLoading ? (
+              {isLoading ? (
                 <div className="rounded-2xl bg-slate-50 px-4 py-2 text-xs text-slate-500 ring-1 ring-inset ring-slate-200">
-                  Loading default account...
+                  Loading recent account...
                 </div>
-              ) : defaultAccount ? (
+              ) : recentAccount ? (
                 <div className="inline-flex items-center gap-2 rounded-2xl bg-sky-50 px-4 py-2 text-sm text-sky-800 ring-1 ring-inset ring-sky-200">
                   <span className="text-base leading-none">⭐</span>
                   <div className="flex flex-col leading-tight">
                     <span className="text-[11px] font-medium uppercase tracking-wide text-sky-600">
-                      Using default account
+                      Using most recent account
                     </span>
                     <span className="font-semibold">
-                      {defaultAccount.name} ({defaultAccount.currency})
+                      {recentAccount.name} ({recentAccount.currency})
                     </span>
                   </div>
                 </div>
               ) : (
                 <div className="rounded-2xl bg-amber-50 px-4 py-2 text-xs text-amber-700 ring-1 ring-inset ring-amber-200">
-                  No default account selected
+                  No recent account selected
                 </div>
               )}
             </div>
@@ -390,40 +339,20 @@ export default function TransactionsPage() {
             </div>
           </div>
 
-          <form onSubmit={handleCreate} className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-            <div className="xl:col-span-2">
-              <label className="block text-sm font-medium text-slate-700">Account</label>
-              <select
-                value={createAccountId}
-                onChange={(e) => setCreateAccountId(e.target.value)}
-                required
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-              >
-                <option value="">Select account</option>
-                {(accountsData ?? []).map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name} ({account.currency})
-                  </option>
-                ))}
-              </select>
-            </div>
-
+          <form onSubmit={handleDetailedAddTransactionSubmit} className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
             <div>
               <label className="block text-sm font-medium text-slate-700">Amount</label>
               <input
-                value={createAmount}
+                value={detailedAddTransactionData.amount}
                 onChange={(e) => {
-                  setCreateAmount(e.target.value)
-                  setCreateFieldErrors((prev) => ({ ...prev, amount: undefined }))
+                  handleDetailedAddTransactionDataChange("amount", e.target.value)
                 }}
                 inputMode="decimal"
                 placeholder="e.g. -12.99"
                 required
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
-              {createFieldErrors.amount ? (
-                <div className="mt-1 text-xs font-medium text-red-600">{createFieldErrors.amount}</div>
-              ) : null}
+              
             </div>
 
             <div>
@@ -432,8 +361,8 @@ export default function TransactionsPage() {
                 type="date"
                 min="2000-01-01"
                 max={todayYYYYMMDD()}
-                value={createOccurredAt}
-                onChange={(e) => setCreateOccurredAt(e.target.value)}
+                value={detailedAddTransactionData.occurred_at}
+                onChange={(e) => handleDetailedAddTransactionDataChange("occurred_at", e.target.value)}
                 required
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
@@ -442,8 +371,8 @@ export default function TransactionsPage() {
             <div>
               <label className="block text-sm font-medium text-slate-700">Category</label>
               <select
-                value={createCategory}
-                onChange={(e) => setCreateCategory(e.target.value as TransactionCategory)}
+                value={detailedAddTransactionData.category}
+                onChange={(e) => handleDetailedAddTransactionDataChange("category", e.target.value)}
                 required
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
@@ -459,8 +388,8 @@ export default function TransactionsPage() {
             <div>
               <label className="block text-sm font-medium text-slate-700">Note</label>
               <input
-                value={createNote}
-                onChange={(e) => setCreateNote(e.target.value)}
+                value={detailedAddTransactionData.note}
+                onChange={(e) => handleDetailedAddTransactionDataChange("note", e.target.value)}
                 placeholder="Optional"
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
@@ -496,7 +425,7 @@ export default function TransactionsPage() {
 
             <button
               type="button"
-              onClick={clearAll}
+              onClick={resetFilterTransactionsData}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
               Reset filters
@@ -505,27 +434,11 @@ export default function TransactionsPage() {
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700">Account</label>
-              <select
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                value={params.account_id}
-                onChange={(e) => setFilter("account_id", e.target.value)}
-              >
-                <option value="">All</option>
-                {(accountsData ?? []).map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.currency})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
               <label className="block text-sm font-medium text-slate-700">Note</label>
               <input
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                value={params.note}
-                onChange={(e) => setFilter("note", e.target.value)}
+                value={filterTransactionsData.note}
+                onChange={(e) => handleFilterTransactionsDataChange("note", e.target.value)}
                 placeholder="e.g. Costco"
               />
             </div>
@@ -534,8 +447,8 @@ export default function TransactionsPage() {
               <label className="block text-sm font-medium text-slate-700">Category</label>
               <select
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                value={params.category}
-                onChange={(e) => setFilter("category", e.target.value)}
+                value={filterTransactionsData.category}
+                onChange={(e) => handleFilterTransactionsDataChange("category", e.target.value)}
               >
                 <option value="">All</option>
                 {TRANSACTION_CATEGORIES.map((c) => (
@@ -555,11 +468,9 @@ export default function TransactionsPage() {
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 value={draftFrom}
                 onChange={(e) => setDraftFrom(e.target.value)}
-                onBlur={() => setFilter("from", draftFrom)}
+                onBlur={() => handleFilterTransactionsDataChange("from", draftFrom)}
               />
-              {filterFieldErrors.from ? (
-                <div className="mt-1 text-xs font-medium text-red-600">{filterFieldErrors.from}</div>
-              ) : null}
+              
             </div>
 
             <div>
@@ -571,49 +482,43 @@ export default function TransactionsPage() {
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 value={draftTo}
                 onChange={(e) => setDraftTo(e.target.value)}
-                onBlur={() => setFilter("to", draftTo)}
+                onBlur={() => handleFilterTransactionsDataChange("to", draftTo)}
               />
-              {filterFieldErrors.to ? (
-                <div className="mt-1 text-xs font-medium text-red-600">{filterFieldErrors.to}</div>
-              ) : null}
+              
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700">Min amount</label>
               <input
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                value={params.min_amount}
-                onChange={(e) => setFilter("min_amount", e.target.value)}
+                value={filterTransactionsData.min_amount}
+                onChange={(e) => handleFilterTransactionsDataChange("min_amount", e.target.value)}
                 inputMode="decimal"
                 placeholder="0.00"
               />
-              {filterFieldErrors.min_amount ? (
-                <div className="mt-1 text-xs font-medium text-red-600">{filterFieldErrors.min_amount}</div>
-              ) : null}
+              
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700">Max amount</label>
               <input
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                value={params.max_amount}
+                value={filterTransactionsData.max_amount}
                 onChange={(e) => {
-                  setFilter("max_amount", e.target.value)
+                  handleFilterTransactionsDataChange("max_amount", e.target.value)
                 }}
                 inputMode="decimal"
                 placeholder="100.00"
               />
-              {filterFieldErrors.max_amount ? (
-                <div className="mt-1 text-xs font-medium text-red-600">{filterFieldErrors.max_amount}</div>
-              ) : null}
+              
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700">Limit</label>
               <select
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                value={params.limit}
-                onChange={(e) => setFilter("limit", e.target.value)}
+                value={filterTransactionsData.limit}
+                onChange={(e) => handleFilterTransactionsDataChange("limit", e.target.value)}
               >
                 <option value="10">10</option>
                 <option value="20">20</option>
@@ -783,22 +688,7 @@ export default function TransactionsPage() {
               </div>
 
               <form onSubmit={handleSaveEdit} className="mt-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">Account</label>
-                  <select
-                    value={editAccountId}
-                    onChange={(e) => setEditAccountId(e.target.value)}
-                    required
-                    className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                  >
-                    <option value="">Select Account</option>
-                    {(accountsData ?? []).map((acc) => (
-                      <option key={acc.id} value={acc.id}>
-                        {acc.name} ({acc.currency})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700">Amount</label>
@@ -816,7 +706,7 @@ export default function TransactionsPage() {
                   <label className="block text-sm font-medium text-slate-700">Category</label>
                   <select
                     value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value as TransactionCategory)}
+                    onChange={(e) => setEditCategory(e.target.value)}
                     required
                     className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >

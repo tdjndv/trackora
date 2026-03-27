@@ -96,7 +96,9 @@ export async function getTransactions(user_id, query) {
                 ...(query.note && {note: {
                     contains: query.note,
                     mode: "insensitive"
-                }})
+                }}),
+
+                ...(query.category && { category: query.category})
             }
 
     const [transactions, total] = await Promise.all([

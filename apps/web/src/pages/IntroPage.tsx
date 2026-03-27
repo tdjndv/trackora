@@ -1,6 +1,17 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useAuth } from "../context/AuthContext"
+import { useEffect } from "react"
 
 export default function IntroPage() {
+    const navigate = useNavigate()
+    const {user} = useAuth()
+
+    useEffect(() => {
+        if (user) {
+            navigate("/transactions")
+        }
+    }, [user])
+
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900">
             {/* Header */}

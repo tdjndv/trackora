@@ -1,6 +1,8 @@
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useEffect, useRef, useState } from "react"
+import { useAccountsQuery, useRecentAccountQuery } from "../hooks/queries/accounts"
+import { useSetRecentAccountMutation } from "../hooks/mutations/accounts"
 
 export default function Navbar() {
   const { user, signout } = useAuth()
@@ -8,6 +10,16 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
+
+  const { data: accounts, isLoading, isError } = useAccountsQuery()
+  const { data: recentAccount } = useRecentAccountQuery()
+  const setRecentAccountMutation = useSetRecentAccountMutation()
+
+  function handleSelectAccount(value: string) {
+    setRecentAccountMutation.mutate({
+      account_id: value === "all" ? null : value,
+    })
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -31,18 +43,57 @@ export default function Navbar() {
     ].join(" ")
 
   return (
-    <div className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-        <div className="flex items-center gap-6">
+    <div className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+        
+        {/* LEFT SIDE */}
+        <div className="flex items-center gap-4">
           <Link to="/accounts" className="group flex items-center gap-2">
             <div className="leading-tight">
-              <div className="text-sm font-semibold text-slate-900">Trackora</div>
+              <div className="text-base font-semibold text-slate-900">Trackora</div>
               <div className="text-xs text-slate-500">Personal finance tracker</div>
             </div>
           </Link>
 
           <div className="hidden h-8 w-px bg-slate-200 md:block" />
 
+          {/* Account selector */}
+          <div className="hidden items-center gap-3 lg:flex">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Accounts
+            </div>
+
+            {isLoading ? (
+              <div className="min-w-[250px] rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-500 shadow-sm">
+                Loading...
+              </div>
+            ) : isError ? (
+              <div className="min-w-[250px] rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600 shadow-sm">
+                Error
+              </div>
+            ) : (
+              <div className="relative min-w-[280px]">
+                <select
+                  value={recentAccount?.id ?? "all"}
+                  onChange={(e) => handleSelectAccount(e.target.value)}
+                  className="w-full appearance-none rounded-2xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:border-slate-300 focus:border-slate-400"
+                >
+                  <option value="all">All Accounts</option>
+                  {accounts?.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name} ({account.currency})
+                    </option>
+                  ))}
+                </select>
+
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
+                  ▾
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Navigation */}
           <div className="flex items-center gap-2">
             <Link to="/accounts" className={navLinkClass("/accounts")}>
               Accounts
@@ -52,28 +103,26 @@ export default function Navbar() {
               Transactions
             </Link>
 
-            <Link to="/dashboard" className={navLinkClass("/dashboard")}>
-              Dashboard
-            </Link>
-
-            <Link to="/subscription" className={navLinkClass("/subscription")}>
-              Subscription
+            <Link to="/analytics" className={navLinkClass("/analytics")}>
+              Analytics
             </Link>
           </div>
         </div>
 
+        {/* RIGHT SIDE (USER ONLY) */}
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
             onClick={() => setOpen((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 active:scale-[0.99]"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
           >
-            <span className="max-w-[180px] truncate">{user.email}</span>
+            <span className="max-w-[200px] truncate">{user.email}</span>
             <span className="text-slate-500">▾</span>
           </button>
 
           {open && (
             <div className="absolute right-0 mt-2 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+              
               <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
                 <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
                   Signed in as
@@ -88,56 +137,41 @@ export default function Navbar() {
 
               <div className="p-2">
                 <button
-                  type="button"
                   onClick={() => {
                     setOpen(false)
                     navigate("/accounts")
                   }}
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-100"
                 >
                   Accounts
                 </button>
 
                 <button
-                  type="button"
                   onClick={() => {
                     setOpen(false)
                     navigate("/transactions")
                   }}
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-100"
                 >
                   Transactions
                 </button>
 
                 <button
-                  type="button"
                   onClick={() => {
                     setOpen(false)
-                    navigate("/dashboard")
+                    navigate("/analytics")
                   }}
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-100"
                 >
-                  Dashboard
+                  Analytics
                 </button>
 
                 <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false)
-                    navigate("/subscription")
-                  }}
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
-                >
-                  Subscription
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => {
                     setOpen(false)
                     navigate("/reset-password")
                   }}
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-100"
                 >
                   Reset Password
                 </button>
@@ -145,13 +179,12 @@ export default function Navbar() {
                 <div className="my-2 border-t border-slate-200" />
 
                 <button
-                  type="button"
                   onClick={() => {
                     setOpen(false)
                     signout()
                     navigate("/")
                   }}
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50"
                 >
                   Sign out
                 </button>

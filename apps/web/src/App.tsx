@@ -5,7 +5,7 @@ import SignInPage from "./pages/SignInPage.tsx"
 import SignUpPage from "./pages/SignUpPage.tsx"
 import AccountsPage from "./pages/AccountsPage.tsx"
 import TransactionsPage from "./pages/TransactionsPage.tsx"
-import DashboardPage from "./pages/DashboardPage.tsx"
+import AnalyticsPage from "./pages/AnalyticsPage.tsx"
 import SubscriptionPage from "./pages/SubscriptionPage.tsx"
 import RequirePro from "./components/RequirePro.tsx"
 import BillingSuccess from "./pages/BillingSuccess.tsx"
@@ -46,11 +46,11 @@ export default function App() {
         />
 
         <Route
-          path="/dashboard"
+          path="/analytics"
           element={
             <RequireAuth>
               <RequirePro>
-                <DashboardPage />
+                <AnalyticsPage />
               </RequirePro>
             </RequireAuth>
           }

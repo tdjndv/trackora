@@ -8,6 +8,12 @@ export type UserDTO = {
     has_used_trial: boolean
     created_at: string
     updated_at: string
+
+    most_recent_account_id: string | null
+    most_recent_account?: {
+        id: string
+        name: string
+    } | null
 }
 
 export type SignInForm = {

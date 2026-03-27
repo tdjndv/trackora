@@ -1,8 +1,8 @@
 import {api} from "./client"
 
-import type { AccountType, AccountDTO } from "../types/accounts"
+import type { AccountDTO } from "../types/accounts"
 
-export async function listAccounts(params: {name?: string, type?: AccountType, currency?: string}) {
+export async function listAccounts(params? : {name?: string, type?: string | null, currency?: string}) {
     const cleaned: Record<string, string> = {}
 
     if (params?.name) cleaned.name = params.name
@@ -13,7 +13,7 @@ export async function listAccounts(params: {name?: string, type?: AccountType, c
     return res.data as AccountDTO[]
 }
 
-export async function createAccount(input: {name: string, type: AccountType, currency: string}) {
+export async function createAccount(input: {name: string, type: string | null, currency: string}) {
     const res = await api.post("/accounts", input)
     return res.data as AccountDTO
 }
@@ -21,7 +21,7 @@ export async function createAccount(input: {name: string, type: AccountType, cur
 export async function putAccount(input: {
     id: string
     name?: string
-    type?: AccountType
+    type?: string
     currency?: string
 }) {
     const {id, ...rest} = input
@@ -40,12 +40,12 @@ export async function deleteAccount(input: {id: string}) {
     return input.id
 }
 
-export async function getDefaultAccount() {
-    const res = await api.get("/accounts/default")
-    return res.data as AccountDTO
+export async function getRecentAccount() {
+    const res = await api.get("/accounts/recent")
+    return res.data
 }
 
-export async function setDefaultAccount(input: {account_id: string}) {
-    const res = await api.post("/accounts/default", input)
-    return res.data as AccountDTO
+export async function setRecentAccount(input: {account_id: string | null}) {
+    const res = await api.put("/accounts/recent", input)
+    return res.data
 }

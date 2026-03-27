@@ -30,14 +30,14 @@ export async function getAccounts(user_id, query) {
     return accounts.map(accountDto)
 }
 
-export async function changeDefault(user_id, body) {
-    const account = await accountsRepo.changeDefault(user_id, body.account_id)
+export async function setRecent(user_id, body) {
+    const account = await accountsRepo.setRecent(user_id, body.account_id)
 
     return accountDto(account)
 }
 
-export async function getDefault(user_id) {
-    const account = await accountsRepo.getDefault(user_id)
+export async function getRecent(user_id) {
+    const account = await accountsRepo.getRecent(user_id)
 
     return accountDto(account)
 }

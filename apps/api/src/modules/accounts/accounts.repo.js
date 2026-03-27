@@ -66,27 +66,25 @@ export async function getAccounts(user_id, query) {
     })
 }
 
-export async function changeDefault(user_id, account_id) {
-    return await prisma.$transaction([
-        prisma.account.updateMany({
-            where: {
-                user_id: user_id,
-                isDefault: true
-            },
-            data: {
-                isDefault: false,
-            }
-        }),
-        prisma.account.update({
-            where: {id: account_id},
-            data: {isDefault: true}
-        })
-    ])
+export async function setRecent(user_id, account_id) {
+    return await prisma.user.update({
+        where: {id: user_id},
+        data: {
+            most_recent_account_id: account_id,
+        },
+        include: {
+            most_recent_account: true
+        }
+    })
 }
 
-export async function getDefault(user_id) {
-    return await prisma.account.findFirst({
-        where: {user_id: user_id, isDefault: true}
+export async function getRecent(user_id) {
+    const temp = await prisma.user.findUnique({
+        where: {id: user_id},
+        select: {
+            most_recent_account: true
+        }
     })
+    return temp.most_recent_account ?? null
 }
 

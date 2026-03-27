@@ -5,94 +5,43 @@ import { getInsights, getSummaries } from "../api/dashboard"
 import LoadingPage from "./LoadingPage"
 
 import { formatCents, minYYYYMMDD } from "../utils/general"
-import { useSearchParams } from "react-router-dom"
 
-import type { DashboardFilterErrors } from "../types/dashboard"
+import type { FilterAnalyticsForm, FilterAnalyticsField } from "../types/analytics"
 
 import { todayYYYYMMDD } from "../utils/general"
+import { useRecentAccountQuery } from "../hooks/queries/accounts"
+import { useAnalyticsQuery, useInsightsQuery } from "../hooks/queries/analytics"
 
 export default function DashboardPage() {
-    const [searchParams, setSearchParams] = useSearchParams()
 
-    const [filterErrors, setFilterErrors] = useState<DashboardFilterErrors>({})
+    const {data: recentAccount} = useRecentAccountQuery()
 
-    const params = useMemo(() => {
-        const account_ids = searchParams.get("account_ids") || undefined
-        const from = searchParams.get("from") || undefined
-        const to = searchParams.get("to") || undefined
-
-        return { account_ids, from, to }
-    }, [searchParams])
-
-    function setFilter(key: string, value: string) {
-        const next = new URLSearchParams(searchParams)
-        if (!value) {
-            next.delete(key)
-        } else {
-            next.set(key, value)
-        }
-        setSearchParams(next)
+    const [filterAnalyticsData, setFilterAnalyticsData] = useState<FilterAnalyticsForm>({
+        from: "",
+        to: ""
+    })
+    
+    function handleFilterAccountDataChange(field: FilterAnalyticsField, value: string) {
+        setFilterAnalyticsData(prev => ({...prev, [field]: value}))
     }
-
-    function clearFilters() {
-        const base = new URLSearchParams()
-        base.set("account_ids", allAccountIds())
-        setSearchParams(base)
+    
+    function resetFilterAccountData() {
+        setFilterAnalyticsData({from: "", to: ""})
     }
 
     const [draftFrom, setDraftFrom] = useState<string>("")
     const [draftTo, setDraftTo] = useState<string>("")
 
-    const accountsQuery = useQuery({
-        queryKey: ["accounts"],
-        queryFn: () => listAccounts({}),
-        placeholderData: (prev) => prev
-    })
-    const accountsData = accountsQuery.data
-
-    function allAccountIds() {
-        if (!accountsData) return ""
-        return accountsData.map((account) => account.id).join(",")
-    }
-
-    const dashboardQuery = useQuery({
-        queryKey: ["dashboard", { account_ids: params.account_ids, from: params.from, to: params.to }],
-        queryFn: () => getSummaries({ account_ids: params.account_ids, from: params.from, to: params.to }),
-        placeholderData: (prev) => prev,
-        retry: 1
-    })
-    const dashboardData = dashboardQuery.data
+    const {data: analyticsData} = useAnalyticsQuery({...filterAnalyticsData, account_ids: recentAccount?.id ?? ""})
 
     const insightsQuery = useQuery({
-        queryKey: ["insights", { account_ids: params.account_ids, from: params.from, to: params.to }],
-        queryFn: () => getInsights({ account_ids: params.account_ids, from: params.from, to: params.to }),
+        queryKey: ["insights"],
+        queryFn: () => getInsights({ account_ids: recentAccount.id, from: filterAnalyticsData.from, to: filterAnalyticsData.to }),
         placeholderData: (prev) => prev,
-        enabled: false,
+        enabled: true,
         retry: 1
     })
     const insightsData = insightsQuery.data
-
-    function clearFilterErrors() {
-        setFilterErrors({})
-    }
-
-    useEffect(() => {
-        if (dashboardQuery.isError) {
-            const error = dashboardQuery.error as any
-            const issues = error.response.data.issues
-            const errors: Record<string, string> = {}
-            for (const issue of issues) {
-                errors[issue.path[0]] = issue.message
-            }
-            setFilterErrors(errors)
-        } else {
-            clearFilterErrors()
-        }
-    }, [dashboardQuery.isError, dashboardQuery.error])
-
-    if (dashboardQuery.isLoading && !dashboardQuery.data) {
-        return <LoadingPage />
-    }
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -110,12 +59,6 @@ export default function DashboardPage() {
                             Check the summary for your accounts and understand your financial activity at a glance.
                         </p>
                     </div>
-
-                    <div className="rounded-2xl bg-white px-4 py-3 text-sm text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200">
-                        {accountsQuery.isLoading
-                            ? "Loading accounts..."
-                            : `Showing ${accountsData?.length ?? 0} accounts`}
-                    </div>
                 </div>
 
                 {/* Filters */}
@@ -130,7 +73,7 @@ export default function DashboardPage() {
 
                         <button
                             type="button"
-                            onClick={clearFilters}
+                            onClick={resetFilterAccountData}
                             className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
                         >
                             Clear filters
@@ -138,30 +81,6 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="mt-6 grid gap-4 md:grid-cols-3">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700">Account</label>
-                            <select
-                                value={params.account_ids}
-                                onChange={(e) => {
-                                    const value = e.target.value
-                                    if (value === "all") {
-                                        setFilter("account_ids", allAccountIds())
-                                    } else {
-                                        setFilter("account_ids", value)
-                                    }
-                                }}
-                                required
-                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                            >
-                                <option value="all">All</option>
-                                {(accountsData ?? []).map((account) => (
-                                    <option key={account.id} value={account.id}>
-                                        {account.name} {account.currency}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
                         <div>
                             <label className="block text-sm font-medium text-slate-700">From</label>
                             <input
@@ -171,11 +90,8 @@ export default function DashboardPage() {
                                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
                                 value={draftFrom}
                                 onChange={(e) => setDraftFrom(e.target.value)}
-                                onBlur={() => setFilter("from", draftFrom)}
+                                onBlur={() => handleFilterAccountDataChange("from", draftFrom)}
                             />
-                            {filterErrors.from ? (
-                                <div className="mt-1 text-sm font-medium text-red-600">{filterErrors.from}</div>
-                            ) : null}
                         </div>
 
                         <div>
@@ -187,11 +103,8 @@ export default function DashboardPage() {
                                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
                                 value={draftTo}
                                 onChange={(e) => setDraftTo(e.target.value)}
-                                onBlur={() => setFilter("to", draftTo)}
+                                onBlur={() => handleFilterAccountDataChange("to", draftTo)}
                             />
-                            {filterErrors.to ? (
-                                <div className="mt-1 text-sm font-medium text-red-600">{filterErrors.to}</div>
-                            ) : null}
                         </div>
                     </div>
                 </div>
@@ -204,7 +117,7 @@ export default function DashboardPage() {
                             Income
                         </div>
                         <div className="mt-4 text-2xl font-bold text-slate-900">
-                            {formatCents(dashboardData?.total_income ?? 0)}
+                            {formatCents(analyticsData?.total_income ?? 0)}
                         </div>
                     </div>
 
@@ -214,7 +127,7 @@ export default function DashboardPage() {
                             Expense
                         </div>
                         <div className="mt-4 text-2xl font-bold text-slate-900">
-                            {formatCents(dashboardData?.total_expense ?? 0)}
+                            {formatCents(analyticsData?.total_expense ?? 0)}
                         </div>
                     </div>
 
@@ -224,7 +137,7 @@ export default function DashboardPage() {
                             Activity
                         </div>
                         <div className="mt-4 text-2xl font-bold text-slate-900">
-                            {dashboardData?.count ?? 0}
+                            {analyticsData?.count ?? 0}
                         </div>
                     </div>
 
@@ -234,7 +147,7 @@ export default function DashboardPage() {
                             Summary
                         </div>
                         <div className="mt-4 text-2xl font-bold text-slate-900">
-                            {formatCents(dashboardData?.net ?? 0)}
+                            {formatCents(analyticsData?.net ?? 0)}
                         </div>
                     </div>
                 </div>
@@ -321,12 +234,12 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="rounded-2xl bg-slate-50 px-4 py-2 text-sm text-slate-600 ring-1 ring-inset ring-slate-200">
-                            {(dashboardData?.by_category ?? []).length} categories
+                            {(analyticsData?.by_category ?? []).length} categories
                         </div>
                     </div>
 
                     <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {(dashboardData?.by_category ?? []).map((category: any) => {
+                        {(analyticsData?.by_category ?? []).map((category: any) => {
                             const isIncome = category.income !== 0
                             return (
                                 <div
@@ -377,7 +290,7 @@ export default function DashboardPage() {
                         })}
                     </div>
 
-                    {(dashboardData?.by_category ?? []).length === 0 ? (
+                    {(analyticsData?.by_category ?? []).length === 0 ? (
                         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center">
                             <h3 className="text-lg font-semibold text-slate-900">No category data</h3>
                             <p className="mt-2 text-sm text-slate-600">

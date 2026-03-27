@@ -9,23 +9,29 @@ export const ACCOUNT_TYPES = [
     "OTHER"
 ] as const
 
-export type AccountType = typeof ACCOUNT_TYPES[number]
-
 export type AccountDTO = {
     id: string
     user_id: string
     name: string
-    type: AccountType
+    type: string
     currency: string
     created_at: string
     updated_at: string
-    isDefault: boolean
 }
 
-export function isAccountType(type: string) {
-    return (ACCOUNT_TYPES as readonly string[]).includes(type)
+export type AddAccountForm = {
+    name: string
+    type: string
+    currency: string
 }
+export type AddAccountField = "name" | "type" | "currency"
+export type AddAccountErrors = Partial<Record<AddAccountField, string>>
 
-export function stringToAccountType(type: string) {
-    return isAccountType(type) ? type as AccountType : undefined
+export type FilterAccountForm = {
+    name: string
+    type: string
+    currency: string
 }
+export type FilterAccountField = "name" | "type" | "currency"
+export type FilterAccountErrors = Partial<Record<FilterAccountField, string>>
+
