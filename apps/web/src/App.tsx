@@ -11,6 +11,7 @@ import RequirePro from "./components/RequirePro.tsx"
 import BillingSuccess from "./pages/BillingSuccess.tsx"
 import BillingCancel from "./pages/BillingCancel.tsx"
 import IntroPage from "./pages/IntroPage.tsx"
+import ResetPasswordPage from "./pages/ResetPasswordPage.tsx"
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/" element={<IntroPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         <Route path="/billing/success" element={<BillingSuccess />} />
         <Route path="/billing/cancel" element={<BillingCancel />} />

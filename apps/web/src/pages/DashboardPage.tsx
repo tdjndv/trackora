@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react"
 import { listAccounts } from "../api/accounts"
-import { getSummaries } from "../api/dashboard"
+import { getInsights, getSummaries } from "../api/dashboard"
 import LoadingPage from "./LoadingPage"
 
 import { formatCents, minYYYYMMDD } from "../utils/general"
@@ -62,6 +62,15 @@ export default function DashboardPage() {
         retry: 1
     })
     const dashboardData = dashboardQuery.data
+
+    const insightsQuery = useQuery({
+        queryKey: ["insights", { account_ids: params.account_ids, from: params.from, to: params.to }],
+        queryFn: () => getInsights({ account_ids: params.account_ids, from: params.from, to: params.to }),
+        placeholderData: (prev) => prev,
+        enabled: false,
+        retry: 1
+    })
+    const insightsData = insightsQuery.data
 
     function clearFilterErrors() {
         setFilterErrors({})
@@ -228,6 +237,77 @@ export default function DashboardPage() {
                             {formatCents(dashboardData?.net ?? 0)}
                         </div>
                     </div>
+                </div>
+
+                {/* AI Insights */}
+                <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 className="text-lg font-semibold text-slate-900">AI Insights</h2>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Generate a user-friendly summary based on your current dashboard filters.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => insightsQuery.refetch()}
+                            disabled={insightsQuery.isFetching}
+                            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {insightsQuery.isFetching
+                                ? "Generating..."
+                                : insightsData
+                                ? "Regenerate insights"
+                                : "Generate insights"}
+                        </button>
+                    </div>
+
+                    {insightsQuery.isFetching ? (
+                        <div className="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4">
+                            <div className="flex items-center gap-3">
+                                <div className="h-2.5 w-2.5 animate-pulse rounded-full bg-indigo-500" />
+                                <div>
+                                    <div className="text-sm font-semibold text-indigo-800">AI is analyzing your transactions...</div>
+                                    <div className="mt-1 text-sm text-indigo-700">
+                                        Looking at your filtered activity, categories, and spending patterns.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {insightsQuery.isError ? (
+                        <div className="mt-6 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                            Failed to generate insights.
+                        </div>
+                    ) : null}
+
+                    {insightsData ? (
+                        <div className="mt-6 space-y-4">
+                            <div className="rounded-2xl bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-800 ring-1 ring-inset ring-indigo-200">
+                                {insightsData.headline}
+                            </div>
+
+                            <div className="space-y-3">
+                                {(insightsData.insights ?? []).slice(0, 3).map((insight: string, index: number) => (
+                                    <div
+                                        key={index}
+                                        className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+                                    >
+                                        <div className="mt-0.5 text-indigo-500">✨</div>
+                                        <div>{insight}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {!insightsQuery.isFetching && !insightsData && !insightsQuery.isError ? (
+                        <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                            No AI insights yet. Click <span className="font-medium text-slate-700">Generate insights</span> to analyze the current filtered transactions.
+                        </div>
+                    ) : null}
                 </div>
 
                 {/* Category Breakdown */}

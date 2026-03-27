@@ -42,6 +42,11 @@ export async function signUp(req, res) {
     return res.json(user)
 }
 
+export async function resetPassword(req, res) {
+    const user = await authService.resetPassword(req.validated.body)
+    return res.json(user)
+}
+
 export async function me(req, res) {
     const user = await authService.getUserByEmail(req.user.email)
     return res.json(user)

@@ -14,3 +14,14 @@ export async function createUser({email, hashed}) {
         }
     })
 }
+
+export async function updatePasswordById({id, hashed}) {
+    return await prisma.user.update({
+        where: {
+            id: id
+        },
+        data: {
+            password: hashed
+        }
+    })
+}

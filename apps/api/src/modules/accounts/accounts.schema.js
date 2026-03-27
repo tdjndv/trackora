@@ -32,3 +32,7 @@ export const getAccountsQuerySchema = z.object({
     type: accountTypeSchema.optional(),
     currency: z.string().length(3).optional()
 })
+
+export const changeDefaultBodySchema = z.object({
+    account_id: z.cuid()
+})

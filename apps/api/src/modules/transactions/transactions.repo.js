@@ -1,5 +1,9 @@
 import {prisma} from "../../utils/prisma.js"
 
+import { getResponse } from "../../openai/general.js"
+
+import {ALLOWED_CATEGORIES} from "../../static/categories.js"
+
 //checking if this account really belongs to this user
 async function userAccountMatch(user, account) {
     const existing = await prisma.account.findFirst({
@@ -218,4 +222,193 @@ export async function getSummaries(user_id, query) {
         total_expense: totalExpense,
         by_category: by_category
     }
+}
+
+export async function getInsights(user_id, query) {
+    const summary = await getSummaries(user_id, query)
+
+    const where = {
+        user_id: user_id,
+        account_id: { in: query.account_ids },
+        ...((query.from || query.to)
+            ? {
+                occurred_at: {
+                    ...(query.from && { gte: query.from }),
+                    ...(query.to && { lt: query.to })
+                }
+            }
+            : {})
+    }
+
+    const topExpenses = await prisma.transaction.findMany({
+        where: {
+            ...where,
+            amount: { lt: 0 }
+        },
+        orderBy: {
+            amount: "asc" // most negative first
+        },
+        take: 5,
+        select: {
+            amount: true,
+            note: true,
+            category: true,
+            occurred_at: true
+        }
+    })
+
+    const topIncomes = await prisma.transaction.findMany({
+        where: {
+            ...where,
+            amount: { gt: 0 }
+        },
+        orderBy: {
+            amount: "desc"
+        },
+        take: 5,
+        select: {
+            amount: true,
+            note: true,
+            category: true,
+            occurred_at: true
+        }
+    })
+
+    const noteGroups = await prisma.transaction.groupBy({
+        by: ["note"],
+        where: {
+            ...where,
+            note: {
+                not: null
+            }
+        },
+        _count: {
+            _all: true
+        },
+        _sum: {
+            amount: true
+        },
+        orderBy: {
+            _count: {
+                note: "desc"
+            }
+        },
+        take: 5
+    })
+
+    const payload = {
+        count: summary.count,
+        net: summary.net ?? 0,
+        total_income: summary.total_income ?? 0,
+        total_expense: summary.total_expense ?? 0,
+        by_category: summary.by_category,
+        top_expenses: topExpenses.map((tx) => ({
+            note: tx.note ?? "No note",
+            category: tx.category,
+            amount: Math.abs(Number(tx.amount)),
+            occurred_at: tx.occurred_at
+        })),
+        top_incomes: topIncomes.map((tx) => ({
+            note: tx.note ?? "No note",
+            category: tx.category,
+            amount: Number(tx.amount),
+            occurred_at: tx.occurred_at
+        })),
+        frequent_notes: noteGroups.map((row) => ({
+            note: row.note ?? "No note",
+            count: row._count._all,
+            net_amount: Number(row._sum.amount ?? 0)
+        }))
+    }
+
+    const prompt = `
+        You are an assistant for a personal finance app.
+
+        Given the summarized transaction data below, generate user-friendly insights.
+
+        Rules:
+        - Be concise and specific.
+        - Focus on spending patterns, category concentration, recurring merchants/notes, and notable large transactions.
+        - Do not give financial advice.
+        - Do not invent facts.
+        - Keep the tone helpful and clear.
+        - Amount is in cents so convert them to dollars
+        - Return ONLY valid JSON in this format:
+
+        {
+        "headline": "string",
+        "insights": [
+            "string",
+            "string",
+            "string"
+        ]
+        }
+
+        Data:
+        ${JSON.stringify(payload, null, 2)}
+    `
+
+    const response = await getResponse(prompt)
+
+    return JSON.parse(response.output_text)
+}
+
+async function inferCategoryFromNote(note) {
+    if (!note.trim()) return "OTHER"
+
+    const prompt = `
+        You are classifying a personal finance transaction.
+
+        Choose the MOST appropriate category.
+
+        Allowed categories:
+        ${ALLOWED_CATEGORIES.join("\n")}
+
+        Guidelines:
+        - Use EATING_OUT for restaurants, cafes
+        - Use GROCERIES for supermarkets
+        - Use SUBSCRIPTION for recurring services
+        - Use TRANSPORT for Uber, gas, transit
+        - Use TRANSFER for moving money between own accounts
+        - Use INVESTMENT for buying assets
+        - Use INVESTMENT_INCOME for dividends/interest
+        - If unclear, use OTHER
+
+        Return ONLY JSON:
+        { "category": "CATEGORY_NAME" }
+
+        Transaction note:
+        ${JSON.stringify(note)}
+    `
+
+    const res = await getResponse(prompt)
+    
+    try {
+        const parsed = JSON.parse(res.output_text)
+        return parsed.category || "OTHER"
+    } catch {
+        return "OTHER"
+    }
+}
+
+export async function quickAddTransaction(user_id, body) {
+    await userAccountMatch(user_id, body.account_id)
+
+    let category = "OTHER"
+    try {
+        category = await inferCategoryFromNote(body.note)
+    } catch {
+        category = "OTHER"
+    }
+
+    return await prisma.transaction.create({
+        data: {
+            user_id: user_id,
+            account_id: body.account_id,
+            amount: body.amount,
+            category: category,
+            note: body.note,
+            occurred_at: new Date()
+        }
+    })
 }

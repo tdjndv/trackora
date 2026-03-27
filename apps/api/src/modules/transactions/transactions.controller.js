@@ -35,3 +35,15 @@ export async function getSummaries(req, res) {
 
     return res.json(summaries)
 }
+
+export async function getInsights(req, res) {
+    const insights = await transactionsService.getInsights(req.user.id, req.validated.query)
+
+    return res.json(insights)
+}
+
+export async function quickAddTransaction(req, res) {
+    const transaction = await transactionsService.quickAddTransaction(req.user.id, req.validated.body)
+
+    return res.json(transaction)
+}

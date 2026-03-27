@@ -1,12 +1,18 @@
 import {prisma} from "../../utils/prisma.js"
 
 export async function createAccount(id, body) {
+
+    const count = await prisma.account.count({
+        where: { user_id: id}
+    })
+
     return await prisma.account.create({
         data: {
             user_id: id,
             name: body.name,
             type: body.type,
             currency: body.currency,
+            isDefault: count === 0
         }
     })
 }
@@ -59,3 +65,28 @@ export async function getAccounts(user_id, query) {
         orderBy: {created_at: "desc"}
     })
 }
+
+export async function changeDefault(user_id, account_id) {
+    return await prisma.$transaction([
+        prisma.account.updateMany({
+            where: {
+                user_id: user_id,
+                isDefault: true
+            },
+            data: {
+                isDefault: false,
+            }
+        }),
+        prisma.account.update({
+            where: {id: account_id},
+            data: {isDefault: true}
+        })
+    ])
+}
+
+export async function getDefault(user_id) {
+    return await prisma.account.findFirst({
+        where: {user_id: user_id, isDefault: true}
+    })
+}
+

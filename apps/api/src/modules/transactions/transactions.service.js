@@ -35,3 +35,15 @@ export async function getSummaries(user_id, query) {
 
     return summaries
 }
+
+export async function getInsights(user_id, query) {
+    const insights = await transactionsRepo.getInsights(user_id, query)
+
+    return insights
+}
+
+export async function quickAddTransaction(user_id, body) {
+    const transaction = await transactionsRepo.quickAddTransaction(user_id, body)
+
+    return transactionDto(transaction)
+}

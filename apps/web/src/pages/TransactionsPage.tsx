@@ -8,6 +8,7 @@ import {
   createTransaction,
   putTransaction,
   deleteTransaction,
+  quickAddTransaction,
 } from "../api/transactions"
 
 import {
@@ -27,7 +28,7 @@ import {
   type TransactionDTO
 } from "../types/transactions.ts"
 
-import { listAccounts } from "../api/accounts"
+import { getDefaultAccount, listAccounts } from "../api/accounts"
 import type { PaginatedResponse } from "../types/general.ts"
 import LoadingPage from "./LoadingPage"
 
@@ -95,6 +96,13 @@ export default function TransactionsPage() {
   })
   const accountsData = accountsQuery.data
 
+  const defaultAccountQuery = useQuery({
+    queryKey: ["default_account"],
+    queryFn: () => getDefaultAccount(),
+  })
+
+  const defaultAccount = defaultAccountQuery.data
+
   const transactionsQuery = useQuery({
     queryKey: ["transactions", params],
     queryFn: () =>
@@ -137,6 +145,9 @@ export default function TransactionsPage() {
   const [createNote, setCreateNote] = useState<string>("")
   const [createCategory, setCreateCategory] = useState<TransactionCategory | "">("")
   const [createOccurredAt, setCreateOccurredAt] = useState<string>(todayYYYYMMDD())
+
+  const [quickNote, setQuickNote] = useState<string>("")
+  const [quickAmount, setQuickAmount] = useState<string>("")
 
   useEffect(() => {
     if (params.account_id) setCreateAccountId(params.account_id)
@@ -184,6 +195,15 @@ export default function TransactionsPage() {
     }
   })
 
+  const quickAddMutation = useMutation({
+    mutationFn: quickAddTransaction,
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ["transactions"]})
+      setQuickAmount("")
+      setQuickNote("")
+    }
+  })
+
   const updateMutation = useMutation({
     mutationFn: putTransaction,
     onSuccess: () => {
@@ -212,6 +232,19 @@ export default function TransactionsPage() {
       note: createNote || undefined,
       category: createCategory,
       occurred_at: createOccurredAt,
+    })
+  }
+
+  const handleQuick = async (e: any) => {
+    e.preventDefault()
+    if (!quickNote) return
+    if (!quickAmount) return
+    if (!defaultAccount) return
+ 
+    quickAddMutation.mutate({
+      account_id: defaultAccount.id,
+      amount: quickAmount,
+      note: quickNote
     })
   }
 
@@ -268,6 +301,78 @@ export default function TransactionsPage() {
             Updating transactions...
           </div>
         ) : null}
+
+        {/* Quick Add */}
+        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Quick add</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Just note + amount for fast entry. We’ll use your default account automatically.
+              </p>
+            </div>
+
+            <div className="flex items-center">
+              {defaultAccountQuery.isLoading ? (
+                <div className="rounded-2xl bg-slate-50 px-4 py-2 text-xs text-slate-500 ring-1 ring-inset ring-slate-200">
+                  Loading default account...
+                </div>
+              ) : defaultAccount ? (
+                <div className="inline-flex items-center gap-2 rounded-2xl bg-sky-50 px-4 py-2 text-sm text-sky-800 ring-1 ring-inset ring-sky-200">
+                  <span className="text-base leading-none">⭐</span>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-sky-600">
+                      Using default account
+                    </span>
+                    <span className="font-semibold">
+                      {defaultAccount.name} ({defaultAccount.currency})
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-amber-50 px-4 py-2 text-xs text-amber-700 ring-1 ring-inset ring-amber-200">
+                  No default account selected
+                </div>
+              )}
+            </div>
+          </div>
+
+          <form
+            onSubmit={handleQuick}
+            className="mt-6 flex flex-col gap-3 sm:flex-row"
+          >
+            {/* Note */}
+            <input
+              value={quickNote}
+              onChange={(e) => setQuickNote(e.target.value)}
+              placeholder="e.g. Starbucks"
+              className="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+            />
+
+            {/* Amount */}
+            <input
+              value={quickAmount}
+              onChange={(e) => setQuickAmount(e.target.value)}
+              inputMode="decimal"
+              placeholder="-5.45"
+              className="w-full sm:w-40 rounded-xl border border-slate-300 px-3 py-2.5 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+            />
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={quickAddMutation.isPending}
+              className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              {quickAddMutation.isPending ? "Adding..." : "Add"}
+            </button>
+          </form>
+          {quickAddMutation.isSuccess ? (
+            <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+              Transaction added.
+            </div>
+          ) : null}
+        </div>
 
         {/* Create Transaction */}
         <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

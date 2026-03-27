@@ -19,6 +19,7 @@ export type AccountDTO = {
     currency: string
     created_at: string
     updated_at: string
+    isDefault: boolean
 }
 
 export function isAccountType(type: string) {

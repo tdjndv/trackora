@@ -13,3 +13,10 @@ export const signInBodySchema = z.object({
     email: emailSchema,
     password: z.string().min(1, "Password is required")
 })
+
+export const resetPasswordBodySchema = z.object({
+    email: emailSchema,
+    oldPassword: z.string().min(1, "Old password is required"),
+    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(8, "Password must be at least 8 characters")
+})

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
-import { listAccounts, createAccount, putAccount, deleteAccount } from "../api/accounts"
+import { listAccounts, createAccount, putAccount, deleteAccount, setDefaultAccount } from "../api/accounts"
 import { useState } from "react"
 import { CURRENCIES } from "../lib/currency"
 import { stringToAccountType, type AccountType } from "../types/accounts"
@@ -47,6 +47,13 @@ export default function AccountsPage() {
       setCreateType(undefined)
       setCreateCurrency("")
     },
+  })
+
+  const defaultMutation = useMutation({
+    mutationFn: setDefaultAccount,
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ["accounts"]})
+    }
   })
 
   const updateMutation = useMutation({
@@ -106,6 +113,11 @@ export default function AccountsPage() {
   const handleDelete = (account: any) => {
     if (!confirm(`Delete account "${account.name}"?`)) return
     deleteMutation.mutate({ id: account.id })
+  }
+
+  const handleDefault = (account: any) => {
+    if (!confirm(`Set account "${account.name}" as default?`)) return
+    defaultMutation.mutate({ account_id: account.id })
   }
 
   if (isLoading) return <LoadingPage />
@@ -300,11 +312,25 @@ export default function AccountsPage() {
           {data?.map((acc: any) => (
             <div
               key={acc.id}
-              className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className={
+                "group rounded-3xl bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md " +
+                (acc.isDefault
+                  ? "border-2 border-emerald-200 ring-2 ring-emerald-50"
+                  : "border border-slate-200")
+              }
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="truncate text-xl font-semibold text-slate-900">{acc.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="truncate text-xl font-semibold text-slate-900">{acc.name}</h3>
+
+                    {acc.isDefault ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                        <span className="text-sm leading-none">★</span>
+                        Default
+                      </span>
+                    ) : null}
+                  </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-200">
@@ -317,11 +343,16 @@ export default function AccountsPage() {
 
                   <div className="mt-4 space-y-1 text-sm text-slate-600">
                     <div>
-                      <span className="font-medium text-slate-700">Type:</span> {acc.type}
+                      <span className="font-medium text-slate-700">Type:</span> {enumToString(acc.type)}
                     </div>
                     <div>
                       <span className="font-medium text-slate-700">Currency:</span> {acc.currency}
                     </div>
+                    {acc.isDefault ? (
+                      <div className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                        This account is used by Quick Add by default.
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -342,6 +373,22 @@ export default function AccountsPage() {
                   >
                     Delete
                   </button>
+
+                  {acc.isDefault ? (
+                    <div className="rounded-xl bg-emerald-50 px-3 py-2 text-center text-sm font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                      Default account
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleDefault(acc)}
+                      disabled={defaultMutation.isPending}
+                      className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-50 disabled:opacity-60"
+                    >
+                      Set as default
+                    </button>
+                  )}
+
                 </div>
               </div>
 
@@ -409,7 +456,7 @@ export default function AccountsPage() {
                     required
                     className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
                   >
-                    <option value="">Select type</option>
+                    <option value="">All</option>
                     {ACCOUNT_TYPES.map((t) => (
                       <option key={t} value={t}>
                         {enumToString(t)}

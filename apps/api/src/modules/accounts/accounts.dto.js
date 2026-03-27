@@ -8,6 +8,7 @@ export function accountDto(account) {
         type: account.type,
         currency: account.currency,
         created_at: account.created_at,
-        updated_at: account.updated_at
+        updated_at: account.updated_at,
+        isDefault: account.isDefault
     }
 }

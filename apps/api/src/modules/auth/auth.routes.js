@@ -2,7 +2,10 @@ import {Router} from "express"
 
 import {validateBody} from "../../middleware/validate.js"
 
-import {signInBodySchema, signUpBodySchema} from "./auth.schema.js"
+import {signInBodySchema,
+        signUpBodySchema,
+        resetPasswordBodySchema
+} from "./auth.schema.js"
 
 import {asyncHandler} from "../../utils/asyncHandler.js"
 
@@ -14,6 +17,8 @@ const router = Router()
 router.post("/signup", validateBody(signUpBodySchema), asyncHandler(authController.signUp))
 router.post("/signin", validateBody(signInBodySchema), asyncHandler(authController.signIn))
 router.post("/signout", authController.clearCookie)
+
+router.put("/reset-password", validateBody(resetPasswordBodySchema), asyncHandler(authController.resetPassword))
 
 router.get("/me", requireAuth, asyncHandler(authController.me))
 

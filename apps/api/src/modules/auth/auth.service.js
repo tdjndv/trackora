@@ -48,6 +48,25 @@ export async function signIn({email, password}) {
     return userDto(user)
 }
 
+export async function resetPassword({email, oldPassword, newPassword, confirmPassword}) {
+    const user = await authRepo.findByEmail(email)
+
+    if (!user) return null
+
+    const match = await bcrypt.compare(oldPassword, user.password)
+    if (!match) return null
+
+    if (newPassword !== confirmPassword) {
+        const e = new Error("Passwords mismatch")
+        e.status = 409
+        throw e
+    }
+
+    const hashed = await bcrypt.hash(newPassword, rounds)
+    const updatedUser = await authRepo.updatePasswordById({id: user.id, hashed})
+
+    return userDto(updatedUser)
+}
 export async function getUserByEmail(email) {
     const user = await authRepo.findByEmail(email)
 

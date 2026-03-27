@@ -29,3 +29,15 @@ export async function getAccounts(req, res) {
 
     return res.json(accounts)
 }
+
+export async function getDefault(req, res) {
+    const account = await accountsService.getDefault(req.user.id)
+
+    return res.json(account)
+}
+
+export async function changeDefault(req, res) {
+    const account = await accountsService.changeDefault(req.user.id, req.validated.body)
+
+    return res.json(account)
+}

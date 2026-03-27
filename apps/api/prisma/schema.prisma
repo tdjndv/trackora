@@ -51,6 +51,8 @@ model Account {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  isDefault Boolean @default(false)
+
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   transactions Transaction[]
@@ -90,18 +92,39 @@ enum AccountType {
 }
 
 enum TransactionCategory {
+  // Essentials
   GROCERIES
   RENT
-  TRANSPORT
+  UTILITIES           // electricity, water, internet, phone
+  INSURANCE
+
+  // Lifestyle
   EATING_OUT
   SHOPPING
-  SUBSCRIPTION
-  HEALTH
   ENTERTAINMENT
-  TRAVEL
+  SUBSCRIPTION        // Netflix, Spotify, SaaS
+  HEALTH              // gym, pharmacy, doctor
+
+  // Transport & travel
+  TRANSPORT           // Uber, gas, transit
+  TRAVEL              // flights, hotels
+
+  // Income
   SALARY
   BONUS
-  INVESTMENT
-  TRANSFER
+  FREELANCE
+  INVESTMENT_INCOME   // dividends, interest
+
+  // Money movement
+  TRANSFER            // between own accounts
+  DEBT_PAYMENT        // credit card, loans
+
+  // Savings / investing
+  INVESTMENT          // buying stocks/crypto
+  SAVINGS
+
+  // Misc
+  GIFT
+  EDUCATION
   OTHER
 }

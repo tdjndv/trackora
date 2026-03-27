@@ -96,3 +96,9 @@ export const getTransactionsSummariesQuerySchema = z.object({
     from: standardTimeSchema.optional(),
     to: toExclusiveTimeSchema.optional()
 })
+
+export const quickAddTransactionBodySchema = z.object({
+    account_id: z.cuid(),
+    note: z.string(),
+    amount: amountSchema
+})

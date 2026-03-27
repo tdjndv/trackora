@@ -66,3 +66,8 @@ export async function deleteTransaction(input: { id: string }) {
   await api.delete(`/transactions/${input.id}`)
   return input.id
 }
+
+export async function quickAddTransaction(input: {account_id: string; note: string; amount: string}) {
+  const res = await api.post("/transactions/quick_add", input)
+  return res.data as TransactionDTO
+}

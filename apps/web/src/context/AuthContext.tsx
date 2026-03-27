@@ -6,8 +6,8 @@ import type { UserDTO } from "../types/auth.ts"
 type AuthState = {
   user:  UserDTO | null
   loading: boolean
-  signin: (email: string, password: string) => Promise<void>
-  signup: (email: string, password: string, confirm: string) => Promise<void>
+  signin: (input: {email: string, password: string}) => Promise<void>
+  signup: (input: {email: string, password: string, confirm: string}) => Promise<void>
   signout: () => Promise<void>
   refreshMe: () => Promise<void>
 }
@@ -35,13 +35,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     run()
   }, [])
 
-  async function signin(email: string, password: string) {
-    await authApi.signin(email, password)
+  async function signin(input: {email: string, password: string}) {
+    await authApi.signin(input)
     await refreshMe()
   }
 
-  async function signup(email: string, password: string, confirm: string) {
-    await authApi.signup(email, password, confirm)
+  async function signup(input: {email: string, password: string, confirm: string}) {
+    await authApi.signup(input)
     await refreshMe()
   }
 

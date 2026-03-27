@@ -39,3 +39,13 @@ export async function deleteAccount(input: {id: string}) {
     await api.delete(`/accounts/${input.id}`)
     return input.id
 }
+
+export async function getDefaultAccount() {
+    const res = await api.get("/accounts/default")
+    return res.data as AccountDTO
+}
+
+export async function setDefaultAccount(input: {account_id: string}) {
+    const res = await api.post("/accounts/default", input)
+    return res.data as AccountDTO
+}
