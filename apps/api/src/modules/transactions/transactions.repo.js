@@ -4,6 +4,8 @@ import { getResponse } from "../../openai/general.js"
 
 import {ALLOWED_CATEGORIES} from "../../static/categories.js"
 
+import { redis } from "../../utils/redis.js"
+
 //checking if this account really belongs to this user
 async function userAccountMatch(user, account) {
     const existing = await prisma.account.findFirst({
@@ -355,7 +357,24 @@ export async function getInsights(user_id, query) {
     return JSON.parse(response.output_text)
 }
 
+function normalizeNote(note) {
+  return note.trim().toLowerCase().replace(/\s+/g, " ")
+}
+
 async function inferCategoryFromNote(note) {
+
+    const normalizedNote = normalizeNote(note)
+    if (!normalizedNote) return "OTHER"
+
+    const cacheKey = `tx:${normalizedNote}`
+
+    try {
+        const cached = await redis.get(cacheKey)
+        if (cached) return cached
+    } catch(err) {
+        console.error("Redis read failed", err)
+    }
+
     if (!note.trim()) return "OTHER"
 
     const prompt = `
@@ -385,12 +404,23 @@ async function inferCategoryFromNote(note) {
 
     const res = await getResponse(prompt)
     
+    let category = "OTHER"
     try {
         const parsed = JSON.parse(res.output_text)
-        return parsed.category || "OTHER"
+        category = parsed.category || "OTHER"
     } catch {
-        return "OTHER"
+        category = "OTHER"
     }
+
+    try {
+        await redis.set(cacheKey, category, {
+            EX: 60 * 60 * 24 * 30
+        })
+    } catch(err) {
+        console.error("Redis write failed", err)
+    }
+
+    return category
 }
 
 export async function quickAddTransaction(user_id, body) {

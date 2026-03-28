@@ -14,6 +14,7 @@ import * as errorHandler from "./middleware/errorHandler.js"
 import stripeWebhookRouter from "./stripe/webhook.js"
 import billingRouter from "./stripe/general.js"
 import emailRouter from "./resend/general.js"
+import { connectRedis } from "./utils/redis.js"
 
 const app = express()
 app.use("/stripe", stripeWebhookRouter)
@@ -41,6 +42,8 @@ app.get("/health", (req, res) => {
 
 app.use(errorHandler.notFound)
 app.use(errorHandler.generalError)
+
+await connectRedis()
 
 app.listen(port, () => {
     console.log(`Server starts listening on ${port}`)
