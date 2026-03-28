@@ -24,15 +24,15 @@ export default function SubscriptionPage() {
     })
 
     function trial() {
-        return subscriptionData.has_used_trial ?? true
+        return subscriptionData?.has_used_trial ?? true
     }
 
     function free() {
-        return subscriptionData.plan === "FREE"
+        return subscriptionData?.plan === "FREE"
     }
 
     function cancel() {
-        return subscriptionData.cancel_at_period_end
+        return subscriptionData?.cancel_at_period_end
     }
 
     return (
@@ -100,7 +100,7 @@ export default function SubscriptionPage() {
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                     <p className="text-sm font-medium text-slate-500">Status</p>
                                     <p className="mt-2 text-lg font-semibold text-slate-900">
-                                        {subscriptionData.subscription_status ?? "canceled"}
+                                        {subscriptionData?.subscription_status ?? "canceled"}
                                     </p>
                                     <p className="mt-1 text-xs text-slate-500">
                                         Your current Stripe subscription state
@@ -114,7 +114,7 @@ export default function SubscriptionPage() {
                                         <>
                                             <p className="text-sm font-medium text-slate-500">Next billing date</p>
                                             <p className="mt-2 text-base font-semibold text-slate-900">
-                                                {toYYYYMMDD(subscriptionData.current_period_end)}
+                                                {toYYYYMMDD(subscriptionData?.current_period_end)}
                                             </p>
                                             <p className="mt-1 text-sm text-slate-600">
                                                 Your subscription will renew automatically on this date.
@@ -124,7 +124,7 @@ export default function SubscriptionPage() {
                                         <>
                                             <p className="text-sm font-medium text-slate-500">Scheduled cancellation</p>
                                             <p className="mt-2 text-base font-semibold text-rose-700">
-                                                {toYYYYMMDD(subscriptionData.current_period_end)}
+                                                {toYYYYMMDD(subscriptionData?.current_period_end)}
                                             </p>
                                             <p className="mt-1 text-sm text-slate-600">
                                                 Your subscription remains active until the end of the current billing cycle.

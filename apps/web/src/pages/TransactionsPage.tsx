@@ -174,7 +174,7 @@ export default function TransactionsPage() {
   const handleDetailedAddTransactionSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (recentAccount?.id) return
+    if (!recentAccount?.id) return
     createMutation.mutate({
       ...detailedAddTransactionData,
       account_id: recentAccount.id
