@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { getInsights, getSummaries } from "../../api/dashboard"
+import { getInsights, getSummaries } from "../../api/analytics"
 
 export function useAnalyticsQuery(input?: {account_ids?: string, from?: string, to?: string}) {
     return useQuery({

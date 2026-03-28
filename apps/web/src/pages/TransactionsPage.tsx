@@ -38,7 +38,7 @@ export default function TransactionsPage() {
   const [filterTransactionsData, setFilterTransactionsData] = useState<FilterTransactionsForm>({
     note: "",
     from: "",
-    to: "",
+    to: todayYYYYMMDD(),
     min_amount: "",
     max_amount: "",
     category: "",
@@ -54,7 +54,7 @@ export default function TransactionsPage() {
     setFilterTransactionsData({
       note: "",
       from: "",
-      to: "",
+      to: todayYYYYMMDD(),
       min_amount: "",
       max_amount: "",
       category: "",
@@ -154,7 +154,7 @@ export default function TransactionsPage() {
   const [detailedAddTransactionData, setDetailedAddTransactionData] = useState<DetailedAddTransactionForm>({
     amount: "",
     note: "",
-    occurred_at: "",
+    occurred_at: todayYYYYMMDD(),
     category: ""
   })
 
@@ -166,7 +166,7 @@ export default function TransactionsPage() {
     setDetailedAddTransactionData({
       amount: "",
       note: "",
-      occurred_at: "",
+      occurred_at: todayYYYYMMDD(),
       category: ""
     })
   }
@@ -250,7 +250,7 @@ export default function TransactionsPage() {
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Quick add</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Just note + amount for fast entry. We’ll use your most recent account automatically.
+                Just note + amount for fast entry. We’ll use the selected account automatically.
               </p>
             </div>
 
@@ -264,7 +264,7 @@ export default function TransactionsPage() {
                   <span className="text-base leading-none">⭐</span>
                   <div className="flex flex-col leading-tight">
                     <span className="text-[11px] font-medium uppercase tracking-wide text-sky-600">
-                      Using most recent account
+                      Using selected account
                     </span>
                     <span className="font-semibold">
                       {recentAccount.name} ({recentAccount.currency})

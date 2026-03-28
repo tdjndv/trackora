@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
-import { getInsights } from "../api/dashboard"
+import { getInsights } from "../api/analytics"
 
 import { formatCents, minYYYYMMDD } from "../utils/general"
 
@@ -10,7 +10,7 @@ import { todayYYYYMMDD } from "../utils/general"
 import { useRecentAccountQuery } from "../hooks/queries/accounts"
 import { useAnalyticsQuery } from "../hooks/queries/analytics"
 
-export default function DashboardPage() {
+export default function AnalyticsPage() {
 
     const {data: recentAccount} = useRecentAccountQuery()
 
@@ -28,7 +28,7 @@ export default function DashboardPage() {
     }
 
     const [draftFrom, setDraftFrom] = useState<string>("")
-    const [draftTo, setDraftTo] = useState<string>("")
+    const [draftTo, setDraftTo] = useState<string>(todayYYYYMMDD())
 
     const {data: analyticsData} = useAnalyticsQuery({...filterAnalyticsData, account_ids: recentAccount?.id ?? ""})
 
@@ -51,7 +51,7 @@ export default function DashboardPage() {
                             Trackora
                         </div>
                         <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
-                            Dashboard
+                            Analytics
                         </h1>
                         <p className="mt-2 text-sm text-slate-600">
                             Check the summary for your accounts and understand your financial activity at a glance.
@@ -65,7 +65,7 @@ export default function DashboardPage() {
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
                             <p className="mt-1 text-sm text-slate-500">
-                                Filter your dashboard by account and date range.
+                                Filter your analytics by date range.
                             </p>
                         </div>
 
@@ -156,7 +156,7 @@ export default function DashboardPage() {
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900">AI Insights</h2>
                             <p className="mt-1 text-sm text-slate-500">
-                                Generate a user-friendly summary based on your current dashboard filters.
+                                Generate a user-friendly summary based on your current analytics filters.
                             </p>
                         </div>
 
