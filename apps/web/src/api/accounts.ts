@@ -8,7 +8,7 @@ export async function listAccounts(params? : {name?: string, type?: string | nul
     if (params?.name) cleaned.name = params.name
     if (params?.type) cleaned.type = params.type
     if (params?.currency) cleaned.currency = params.currency
-
+    
     const res = await api.get("/accounts", {params: cleaned})
     return res.data as AccountDTO[]
 }

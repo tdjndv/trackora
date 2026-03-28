@@ -157,7 +157,7 @@ export default function AccountsPage() {
               <input
                 type="text"
                 value={filterAccountData.name}
-                onChange={(e) => handleAddAccountDataChange("name", e.target.value)}
+                onChange={(e) => handleFilterAccountDataChange("name", e.target.value)}
                 placeholder="e.g. Main Checking"
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
@@ -168,7 +168,7 @@ export default function AccountsPage() {
               <label className="block text-sm font-medium text-slate-700">Type</label>
               <select
                 value={filterAccountData.type ?? "Select a type"}
-                onChange={(e) => handleAddAccountDataChange("type", e.target.value)}
+                onChange={(e) => handleFilterAccountDataChange("type", e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               >
                 <option key={""} value={""}>

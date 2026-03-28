@@ -12,7 +12,6 @@ export async function createAccount(id, body) {
             name: body.name,
             type: body.type,
             currency: body.currency,
-            isDefault: count === 0
         }
     })
 }
