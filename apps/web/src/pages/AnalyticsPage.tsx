@@ -1,8 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import { useEffect, useMemo, useState } from "react"
-import { listAccounts } from "../api/accounts"
-import { getInsights, getSummaries } from "../api/dashboard"
-import LoadingPage from "./LoadingPage"
+import { useState } from "react"
+import { getInsights } from "../api/dashboard"
 
 import { formatCents, minYYYYMMDD } from "../utils/general"
 
@@ -10,7 +8,7 @@ import type { FilterAnalyticsForm, FilterAnalyticsField } from "../types/analyti
 
 import { todayYYYYMMDD } from "../utils/general"
 import { useRecentAccountQuery } from "../hooks/queries/accounts"
-import { useAnalyticsQuery, useInsightsQuery } from "../hooks/queries/analytics"
+import { useAnalyticsQuery } from "../hooks/queries/analytics"
 
 export default function DashboardPage() {
 

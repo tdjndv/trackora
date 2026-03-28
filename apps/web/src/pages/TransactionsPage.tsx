@@ -1,10 +1,8 @@
 // TransactionsPage.tsx
-import React, { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import React, { useEffect, useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import {
-  listTransactions,
   createTransaction,
   putTransaction,
   deleteTransaction,
@@ -29,7 +27,6 @@ import {
 } from "../types/transactions.ts"
 
 import type { PaginatedResponse } from "../types/general.ts"
-import LoadingPage from "./LoadingPage"
 import { useRecentAccountQuery } from "../hooks/queries/accounts.ts"
 import { useTransactionsQuery } from "../hooks/queries/transactions.ts"
 
@@ -214,10 +211,6 @@ export default function TransactionsPage() {
   const handleDelete = (transaction: TransactionDTO) => {
     if (!confirm(`Delete transaction ${transaction.note || ""} Category: ${transaction.category}"?`)) return
     deleteMutation.mutate({ id: transaction.id })
-  }
-
-  if (transactionsQuery.isLoading && !transactionsQuery.data) {
-    return <LoadingPage />
   }
 
   return (

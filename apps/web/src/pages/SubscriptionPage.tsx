@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { cancelSubscription, checkout, getSubscription } from "../api/stripe"
 import { toYYYYMMDD } from "../utils/general"
 import { useAuth } from "../context/AuthContext"
-import LoadingPage from "./LoadingPage"
 
 export default function SubscriptionPage() {
     const queryClient = useQueryClient()
@@ -35,8 +34,6 @@ export default function SubscriptionPage() {
     function cancel() {
         return subscriptionData.cancel_at_period_end
     }
-
-    if (!subscriptionData) return <LoadingPage />
 
     return (
         <div className="min-h-screen bg-slate-50">

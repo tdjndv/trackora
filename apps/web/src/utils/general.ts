@@ -1,5 +1,3 @@
-import { TRANSACTION_CATEGORIES, type TransactionCategory } from "../types/transactions"
-
 export function minYYYYMMDD() {
     return "2000-01-01"
 }
@@ -18,15 +16,6 @@ export function formatCents(cents: number) {
 export function toYYYYMMDD(iso: string) {
     if (!iso) return ""
     return iso.slice(0, 10)
-}
-
-export function stringToCategory(category: string) {
-    const normalized = category.trim().toUpperCase()
-    return TRANSACTION_CATEGORIES.includes(
-        normalized as TransactionCategory
-    )
-    ? (normalized as TransactionCategory)
-    : undefined
 }
 
 export function enumToString(category: string) {

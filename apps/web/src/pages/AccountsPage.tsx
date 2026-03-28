@@ -4,7 +4,6 @@ import { CURRENCIES } from "../lib/currency"
 import { type AddAccountField, type AddAccountForm, type FilterAccountField, type FilterAccountForm } from "../types/accounts"
 import { ACCOUNT_TYPES } from "../types/accounts"
 import { enumToString } from "../utils/general"
-import LoadingPage from "./LoadingPage"
 
 import { useCreateAccountMutation, useDeleteAccountMutation, useSetRecentAccountMutation, useUpdateAccountMutation } from "../hooks/mutations/accounts"
 import { useAccountsQuery } from "../hooks/queries/accounts"
@@ -26,7 +25,7 @@ export default function AccountsPage() {
     setFilterAccountData({name: "", type: "", currency: ""})
   }
 
-  const {data: accountsData, isLoading, isError, error} = useAccountsQuery(filterAccountData)
+  const {data: accountsData, isError, error} = useAccountsQuery(filterAccountData)
 
   const [addAccountData, setAddAccountData] = useState<AddAccountForm>({
     name: "",
@@ -98,7 +97,6 @@ export default function AccountsPage() {
     deleteMutation.mutate({ id: account.id })
   }
 
-  if (isLoading) return <LoadingPage />
   if (isError) {
     return (
       <div className="min-h-screen bg-slate-50">
