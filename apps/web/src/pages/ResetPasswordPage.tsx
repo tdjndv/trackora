@@ -1,73 +1,66 @@
 import { useMutation } from "@tanstack/react-query"
 import { resetPassword } from "../api/auth"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import type {
   ResetPasswordErrors,
   ResetPasswordField,
-  ResetPasswordForm
+  ResetPasswordForm,
 } from "../types/auth"
 
 export default function ResetPasswordPage() {
-    const navigate = useNavigate()
+  const navigate = useNavigate()
 
   const [resetData, setResetData] = useState<ResetPasswordForm>({
     email: "",
     oldPassword: "",
     newPassword: "",
-    confirmPassword: ""
+    confirmPassword: "",
   })
 
-  const [internalError, setInternalError] = useState<string>("")
+  const [internalError, setInternalError] = useState("")
   const [errors, setErrors] = useState<ResetPasswordErrors>({})
 
   const resetPasswordMutation = useMutation({
     mutationFn: resetPassword,
-    onSuccess: () => {
-      navigate("/signin")
-    }
   })
-
-  useEffect(() => {
-    if (resetPasswordMutation.isError) {
-      const error = resetPasswordMutation.error as any
-      const issues = error?.response?.data?.issues
-
-      if (!issues) {
-        setInternalError(
-          error?.response?.data?.message || "Something went wrong"
-        )
-        return
-      }
-
-      const newErrors: ResetPasswordErrors = {}
-      for (const issue of issues) {
-        newErrors[issue.path[0] as ResetPasswordField] = issue.message
-      }
-
-      setErrors(newErrors)
-      setInternalError("")
-    } else {
-      setErrors({})
-      setInternalError("")
-    }
-  }, [resetPasswordMutation.isError, resetPasswordMutation.error])
 
   function handleChange(field: ResetPasswordField, value: string) {
     setResetData((prev) => ({ ...prev, [field]: value }))
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function clearErrors() {
+    setInternalError("")
+    setErrors({})
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    resetPasswordMutation.mutate(resetData)
+    clearErrors()
+
+    try {
+      await resetPasswordMutation.mutateAsync(resetData)
+      navigate("/signin")
+    } catch (error: any) {
+      if (Array.isArray(error?.issues)) {
+        const newErrors: ResetPasswordErrors = {}
+
+        for (const issue of error.issues) {
+          const field = issue.path[0] as ResetPasswordField
+          newErrors[field] = issue.message
+        }
+
+        setErrors(newErrors)
+      } else {
+        setInternalError(error?.message || "Reset password failed")
+      }
+    }
   }
 
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto flex min-h-screen max-w-md items-center p-6">
         <div className="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition hover:shadow-md">
-
-          {/* Title */}
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
               Trackora
@@ -77,24 +70,17 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          {/* Divider */}
           <div className="my-7 border-t border-slate-200" />
 
           <form onSubmit={handleSubmit} className="space-y-5">
-
-            {/* Internal Error */}
             {internalError ? (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {internalError}
               </div>
             ) : null}
 
-            {/* Email */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-slate-700"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700">
                 Email
               </label>
               <input
@@ -111,12 +97,8 @@ export default function ResetPasswordPage() {
               ) : null}
             </div>
 
-            {/* Old Password */}
             <div>
-              <label
-                htmlFor="oldPassword"
-                className="block text-sm font-medium text-slate-700"
-              >
+              <label htmlFor="oldPassword" className="block text-sm font-medium text-slate-700">
                 Old Password
               </label>
               <input
@@ -124,25 +106,17 @@ export default function ResetPasswordPage() {
                 type="password"
                 autoComplete="current-password"
                 value={resetData.oldPassword}
-                onChange={(e) =>
-                  handleChange("oldPassword", e.target.value)
-                }
+                onChange={(e) => handleChange("oldPassword", e.target.value)}
                 placeholder="Enter your current password"
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
               {errors.oldPassword ? (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.oldPassword}
-                </p>
+                <p className="mt-1 text-sm text-red-600">{errors.oldPassword}</p>
               ) : null}
             </div>
 
-            {/* New Password */}
             <div>
-              <label
-                htmlFor="newPassword"
-                className="block text-sm font-medium text-slate-700"
-              >
+              <label htmlFor="newPassword" className="block text-sm font-medium text-slate-700">
                 New Password
               </label>
               <input
@@ -150,25 +124,17 @@ export default function ResetPasswordPage() {
                 type="password"
                 autoComplete="new-password"
                 value={resetData.newPassword}
-                onChange={(e) =>
-                  handleChange("newPassword", e.target.value)
-                }
+                onChange={(e) => handleChange("newPassword", e.target.value)}
                 placeholder="Enter your new password"
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
               {errors.newPassword ? (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.newPassword}
-                </p>
+                <p className="mt-1 text-sm text-red-600">{errors.newPassword}</p>
               ) : null}
             </div>
 
-            {/* Confirm Password */}
             <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-slate-700"
-              >
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700">
                 Confirm Password
               </label>
               <input
@@ -176,20 +142,15 @@ export default function ResetPasswordPage() {
                 type="password"
                 autoComplete="new-password"
                 value={resetData.confirmPassword}
-                onChange={(e) =>
-                  handleChange("confirmPassword", e.target.value)
-                }
+                onChange={(e) => handleChange("confirmPassword", e.target.value)}
                 placeholder="Re-enter your new password"
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
               {errors.confirmPassword ? (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.confirmPassword}
-                </p>
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
               ) : null}
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={resetPasswordMutation.isPending}
@@ -201,17 +162,12 @@ export default function ResetPasswordPage() {
             </button>
           </form>
 
-          {/* Back to Sign In */}
           <div className="mt-7 text-center text-sm text-slate-600">
             Back to{" "}
-            <Link
-              to="/signin"
-              className="font-medium text-slate-900 hover:underline"
-            >
+            <Link to="/signin" className="font-medium text-slate-900 hover:underline">
               Sign in
             </Link>
           </div>
-
         </div>
       </div>
     </div>

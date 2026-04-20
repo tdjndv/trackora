@@ -1,8 +1,8 @@
 import {Navigate} from "react-router-dom"
-import {useAuth} from "../context/AuthContext"
+import { useAppSelector } from "../app/hooks"
 
 export default function RequireAuth({children}: {children: React.ReactNode}) {
-    const {user, loading} = useAuth()
+    const {user, loading} = useAppSelector((state) => state.auth)
     if (loading) return <div>Loading...</div>
     if (!user) return <Navigate to="/signin" replace />
 

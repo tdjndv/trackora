@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { useAuth } from "../context/AuthContext"
 import type { SignUpErrors, SignUpField, SignUpForm } from "../types/auth"
-import { useMutation } from "@tanstack/react-query"
+
+import { useAppDispatch, useAppSelector } from "../app/hooks"
+import {signup} from "../features/auth/authSlice"
 
 export default function SignUpPage() {
-  const { signup, user } = useAuth()
+  const dispatch = useAppDispatch()
+  const {user, loading } = useAppSelector((state) => state.auth)
   const navigate = useNavigate()
 
   const [signUpData, setSignUpData] = useState<SignUpForm>({
@@ -17,43 +19,38 @@ export default function SignUpPage() {
   const [internalError, setInternalError] = useState<string>("")
   const [errors, setErrors] = useState<SignUpErrors>({})
 
-  const signupMutation = useMutation({
-    mutationFn: signup,
-    onSuccess: () => {
-      navigate("/transactions")
-    }
-  })
-
   useEffect(() => {
     if (user) {
       navigate("/transactions")
     }
   }, [user])
 
-  useEffect(() => {
-    if (signupMutation.isError) {
-      
-      const error = signupMutation.error as any
-      const issues = error.response.data.issues
+  function clearErrors() {
+    setErrors({})
+    setInternalError("")
+  }   
   
-      if (!issues) {
-        setInternalError(error.response.data.message)
-        return
-      }
-      
-      const newErrors : SignUpErrors = {}
-      for (const issue of issues) {
-        newErrors[issue.path[0] as SignUpField] = issue.message
-      }
-      setErrors(newErrors)
-    } else {
-      setErrors({})
-    }
-  }, [signupMutation.isError])
-      
   async function handleSubmit(e: any) {
     e.preventDefault()
-    signupMutation.mutate(signUpData)
+
+    clearErrors()
+    try {
+      await dispatch(signup(signUpData)).unwrap()
+      navigate("/transactions")
+    } catch(error: any) {
+      if (Array.isArray(error?.issues)) {
+        //new errors to set
+        const newErrors: SignUpErrors = {}
+
+        for (const issue of error.issues) {
+          const field = issue.path[0] as SignUpField
+          newErrors[field] = issue.message
+        }
+        setErrors(newErrors)
+      } else {
+        setInternalError(error.message)
+      }
+    }
   }
   
   function handleChange(field: SignUpField, value: string) {
@@ -84,10 +81,10 @@ export default function SignUpPage() {
 
             <button
               type="submit"
-              disabled={signupMutation.isPending}
+              disabled={loading}
               className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.99] disabled:opacity-60"
             >
-              {signupMutation.isPending ? "Creating account..." : "Sign Up"}
+              {loading ? "Creating account..." : "Sign Up"}
             </button>
 
             <div>

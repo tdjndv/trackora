@@ -1,11 +1,14 @@
 import { Link, useNavigate, useLocation } from "react-router-dom"
-import { useAuth } from "../context/AuthContext"
 import { useEffect, useRef, useState } from "react"
 import { useAccountsQuery, useRecentAccountQuery } from "../hooks/queries/accounts"
 import { useSetRecentAccountMutation } from "../hooks/mutations/accounts"
 
+import { signout } from "../features/auth/authSlice"
+import { useAppDispatch, useAppSelector } from "../app/hooks"
+
 export default function Navbar() {
-  const { user, signout } = useAuth()
+  const dispatch = useAppDispatch()
+  const user = useAppSelector((state) => state.auth.user)
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   const navigate = useNavigate()
@@ -179,9 +182,9 @@ export default function Navbar() {
                 <div className="my-2 border-t border-slate-200" />
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setOpen(false)
-                    signout()
+                    await dispatch(signout())
                     navigate("/")
                   }}
                   className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50"

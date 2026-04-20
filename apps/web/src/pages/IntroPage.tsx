@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "react-router-dom"
-import { useAuth } from "../context/AuthContext"
 import { useEffect } from "react"
+
+import { useAppSelector } from "../app/hooks"
 
 export default function IntroPage() {
     const navigate = useNavigate()
-    const {user} = useAuth()
+    const user = useAppSelector((state) => state.auth.user)
 
     useEffect(() => {
         if (user) {

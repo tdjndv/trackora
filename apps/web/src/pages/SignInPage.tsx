@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { useAuth } from "../context/AuthContext"
 import type { SignInForm, SignInErrors, SignInField } from "../types/auth"
-import { useMutation } from "@tanstack/react-query"
+
+import { useAppDispatch, useAppSelector } from "../app/hooks"
+import { signin } from "../features/auth/authSlice"
 
 export default function SignInPage() {
-  const { signin, user } = useAuth()
+  const {user, loading } = useAppSelector((state) => state.auth)
+  const dispatch = useAppDispatch()
   const navigate = useNavigate()
 
   const [signInData, setSignInData] = useState<SignInForm>({
@@ -16,42 +18,36 @@ export default function SignInPage() {
   const [internalError, setInternalError] = useState<string>("")
   const [errors, setErrors] = useState<SignInErrors>({})
 
-  const signinMutation = useMutation({
-    mutationFn: signin,
-    onSuccess: () => {
-      navigate("/transactions")
-    }
-  })
-
   useEffect(() => {
     if (user) {
       navigate("/transactions")
     }
   }, [user])
 
-  useEffect(() => {
-    if (signinMutation.isError) {
-      const error = signinMutation.error as any
-      const issues = error.response.data.issues
-
-      if (!issues) {
-        setInternalError(error.response.data.message)
-        return
-      }
-      
-      const newErrors : SignInErrors = {}
-      for (const issue of issues) {
-        newErrors[issue.path[0] as SignInField] = issue.message
-      }
-      setErrors(newErrors)
-    } else {
-      setErrors({})
-    }
-  }, [signinMutation.isError])
+  function clearErrors() {
+    setInternalError("")
+    setErrors({})
+  }
 
   async function handleSubmit(e: any) {
     e.preventDefault()
-    signinMutation.mutate(signInData)
+    clearErrors()
+    try {
+      await dispatch(signin(signInData)).unwrap()
+      navigate("/transactions")
+    } catch (error: any) {
+      if (Array.isArray(error?.issues)) {
+        const newErrors: SignInErrors = {}
+
+        for (const issue of error?.issues) {
+          const field = issue.path[0] as SignInField
+          newErrors[field] = issue.message
+        }
+        setErrors(newErrors)
+      } else {
+        setInternalError(error.message)
+      }
+    }
   }
 
   function handleChange(field: SignInField, value: string) {
@@ -84,10 +80,10 @@ export default function SignInPage() {
 
             <button
               type="submit"
-              disabled={signinMutation.isPending}
+              disabled={loading}
               className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.99] disabled:opacity-60"
             >
-              {signinMutation.isPending ? "Signing in..." : "Sign In"}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
 
             <div>
@@ -138,6 +134,17 @@ export default function SignInPage() {
               Create one
             </Link>
           </div>
+            
+          <div className="mt-3 text-center text-sm text-slate-600">
+            Forgot your password?{" "}
+            <Link
+              to="/reset-password"
+              className="font-medium text-slate-900 hover:underline"
+            >
+              Reset here
+            </Link>
+          </div>
+
         </div>
       </div>
     </div>

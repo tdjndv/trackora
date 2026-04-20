@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { cancelSubscription, checkout, getSubscription } from "../api/stripe"
 import { toYYYYMMDD } from "../utils/general"
-import { useAuth } from "../context/AuthContext"
+
+import { useAppDispatch } from "../app/hooks"
+import { refreshMe } from "../features/auth/authSlice"
+
 
 export default function SubscriptionPage() {
     const queryClient = useQueryClient()
 
-    const { refreshMe } = useAuth()
+    const dispatch = useAppDispatch()
+
 
     const subscriptionQuery = useQuery({
         queryKey: ["subscription"],
@@ -156,9 +160,9 @@ export default function SubscriptionPage() {
                                 {free() ? (
                                     <button
                                         className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 active:scale-[0.99]"
-                                        onClick={() => {
-                                            checkout()
-                                            refreshMe()
+                                        onClick={async () => {
+                                            await checkout()
+                                            await dispatch(refreshMe())
                                         }}
                                     >
                                         Start free trial

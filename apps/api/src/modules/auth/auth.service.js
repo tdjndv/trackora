@@ -51,10 +51,18 @@ export async function signIn({email, password}) {
 export async function resetPassword({email, oldPassword, newPassword, confirmPassword}) {
     const user = await authRepo.findByEmail(email)
 
-    if (!user) return null
+    if (!user) {
+        const e = new Error("User is not found")
+        e.status = 404
+        throw e
+    }
 
     const match = await bcrypt.compare(oldPassword, user.password)
-    if (!match) return null
+    if (!match) {
+        const e = new Error("Invalid credentials")
+        e.status = 401
+        throw e
+    }
 
     if (newPassword !== confirmPassword) {
         const e = new Error("Passwords mismatch")
