@@ -94,7 +94,7 @@ const authSlice = createSlice({
         state.loading = false
         state.initialized = true
       })
-      .addCase(signin.rejected, (state, action) => {
+      .addCase(signin.rejected, (state) => {
         state.loading = false
         state.initialized = true
       })
@@ -108,7 +108,7 @@ const authSlice = createSlice({
         state.loading = false
         state.initialized = true
       })
-      .addCase(signup.rejected, (state, action) => {
+      .addCase(signup.rejected, (state) => {
         state.loading = false
         state.initialized = true
       })
