@@ -1,23 +1,10 @@
-import {z} from "zod"
+import { z } from "zod"
 
-const MIN_DATE="2000-01-01"
+const MIN_DATE = "2000-01-01"
 
-export const categorySchema = z.enum([
-    "GROCERIES",
-  "RENT",
-  "TRANSPORT",
-  "EATING_OUT",
-  "SHOPPING",
-  "SUBSCRIPTION",
-  "HEALTH",
-  "ENTERTAINMENT",
-  "TRAVEL",
-  "SALARY",
-  "BONUS",
-  "INVESTMENT",
-  "TRANSFER",
-    "OTHER",
-])
+import { ALLOWED_CATEGORIES } from "../../static/categories.js"
+
+export const categorySchema = z.enum(ALLOWED_CATEGORIES)
 
 export const validDateSchema = z
     .string()
@@ -56,7 +43,7 @@ export const amountSchema = z
 export const createTransactionBodySchema = z.object({
     account_id: z.cuid(),
     amount: amountSchema,
-    note: z.string().max(1000).optional(),
+    note: z.string().max(400, "Must be at most 400 characters").optional(),
     category: categorySchema.default("OTHER"),
     occurred_at: standardTimeSchema
 })
@@ -64,7 +51,7 @@ export const createTransactionBodySchema = z.object({
 export const putTransactionBodySchema = z.object({
     account_id: z.cuid().optional(),
     amount: amountSchema.optional(),
-    note: z.string().max(1000).optional(),
+    note: z.string().max(400, "Must be at most 400 characters").optional(),
     category: categorySchema.optional(),
     occurred_at: standardTimeSchema.optional()
 })

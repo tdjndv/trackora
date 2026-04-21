@@ -10,17 +10,17 @@ export const TRANSACTION_CATEGORIES = [
   "HEALTH",
   "TRANSPORT",
   "TRAVEL",
-  "EDUCATION",
-  "DEBT_PAYMENT",
   "SALARY",
   "BONUS",
   "FREELANCE",
   "INVESTMENT_INCOME",
-  "GIFT",
   "TRANSFER",
-  "SAVINGS",
+  "DEBT_PAYMENT",
   "INVESTMENT",
-  "OTHER",
+  "SAVINGS",
+  "GIFT",
+  "EDUCATION",
+  "OTHER"
 ] as const
 
 export type TransactionDTO = {

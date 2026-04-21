@@ -106,7 +106,7 @@ export async function getTransactions(user_id, query) {
     const [transactions, total] = await Promise.all([
         prisma.transaction.findMany({
             where: where,
-            orderBy: {occurred_at: "desc"},
+            orderBy: {created_at: "desc"},
             skip: (query.page - 1) * query.limit,
             take: query.limit,
             include: {
@@ -383,7 +383,7 @@ async function inferCategoryFromNote(note) {
         Choose the MOST appropriate category.
 
         Allowed categories:
-        ${ALLOWED_CATEGORIES.join("\n")}
+        ${JSON.stringify(ALLOWED_CATEGORIES)}
 
         Guidelines:
         - Use EATING_OUT for restaurants, cafes

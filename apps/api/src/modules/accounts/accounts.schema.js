@@ -1,15 +1,7 @@
 import {z} from "zod"
+import { ALLOWED_ACCOUNT_TYPES } from "../../static/accountTypes.js"
 
-export const accountTypeSchema = z.enum([
-    "CHECKING",
-    "SAVINGS",
-    "CREDIT_CARD",
-    "CASH",
-    "WECHAT",
-    "ZHIFUBAO",
-    "INVESTMENT",
-    "OTHER"
-])
+export const accountTypeSchema = z.enum(ALLOWED_ACCOUNT_TYPES)
 
 export const createAccountBodySchema = z.object({
     name: z.string().min(1, "Name is required").max(50),

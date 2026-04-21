@@ -23,12 +23,16 @@ import {
   type TransactionDTO,
   type DetailedAddTransactionForm,
   type DetailedAddTransactionField,
-  type FilterTransactionsField
+  type FilterTransactionsField,
+  type QuickAddTransactionForm,
+  type QuickAddTransactionField
 } from "../types/transactions.ts"
 
 import type { PaginatedResponse } from "../types/general.ts"
 import { useRecentAccountQuery } from "../hooks/queries/accounts.ts"
 import { useTransactionsQuery } from "../hooks/queries/transactions.ts"
+
+import {toast} from "sonner"
 
 export default function TransactionsPage() {
   const queryClient = useQueryClient()
@@ -92,8 +96,50 @@ export default function TransactionsPage() {
   const transactions: TransactionDTO[] = txRes?.data ?? []
   const meta = txRes?.meta
 
-  const [quickNote, setQuickNote] = useState<string>("")
-  const [quickAmount, setQuickAmount] = useState<string>("")
+  const maxChars = 400
+
+  const [detailedAddTransactionData, setDetailedAddTransactionData] = useState<DetailedAddTransactionForm>({
+    amount: "",
+    note: "",
+    occurred_at: todayYYYYMMDD(),
+    category: ""
+  })
+
+  function handleDetailedAddTransactionDataChange(field: DetailedAddTransactionField, value: string) {
+    setDetailedAddTransactionData(prev => ({...prev, [field]: value}))
+  }
+
+  function resetDetailedAddTransactionData() {
+    setDetailedAddTransactionData({
+      amount: "",
+      note: "",
+      occurred_at: todayYYYYMMDD(),
+      category: ""
+    })
+  }
+
+  const currentDetailedAddLength = detailedAddTransactionData.note?.length ?? 0
+  const detailedAddRemainingCharacters = maxChars - currentDetailedAddLength
+
+  const [quickAddTransactionData, setQuickAddTransactionData] = useState<QuickAddTransactionForm>({
+    amount: "",
+    note: ""
+  })
+
+  const currentQuickAddLength = quickAddTransactionData.note?.length ?? 0
+  const quickAddRemainingCharacters = maxChars - currentQuickAddLength
+
+  function handleQuickAddTransactionDataChange(field: QuickAddTransactionField, value: string) {
+    setQuickAddTransactionData(prev => ({...prev, [field]: value}))
+  }
+
+  function resetQuickAddTransactionData() {
+    setQuickAddTransactionData({
+      amount: "",
+      note: ""
+    })
+  }
+
 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<TransactionDTO | null>(null)
@@ -119,11 +165,30 @@ export default function TransactionsPage() {
     setEditingTransaction(null)
   }
 
+  function showToastErrors(issues: any[]) {
+    if (!issues) return
+    toast.error(
+      <div>
+        {issues.map((issue: any, i: number) => {
+          const field = issue.path[0]
+          return (
+            <div key={i}>
+              {field}: {issue.message}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   const createMutation = useMutation({
     mutationFn: createTransaction,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] })
       resetDetailedAddTransactionData()
+    },
+    onError: (error: any) => {
+      showToastErrors(error.issues)
     }
   })
 
@@ -131,8 +196,10 @@ export default function TransactionsPage() {
     mutationFn: quickAddTransaction,
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ["transactions"]})
-      setQuickAmount("")
-      setQuickNote("")
+      resetQuickAddTransactionData()
+    },
+    onError: (error: any) => {
+      showToastErrors(error.issues)
     }
   })
 
@@ -151,46 +218,30 @@ export default function TransactionsPage() {
     },
   })
 
-  const [detailedAddTransactionData, setDetailedAddTransactionData] = useState<DetailedAddTransactionForm>({
-    amount: "",
-    note: "",
-    occurred_at: todayYYYYMMDD(),
-    category: ""
-  })
-
-  function handleDetailedAddTransactionDataChange(field: DetailedAddTransactionField, value: string) {
-    setDetailedAddTransactionData(prev => ({...prev, [field]: value}))
-  }
-
-  function resetDetailedAddTransactionData() {
-    setDetailedAddTransactionData({
-      amount: "",
-      note: "",
-      occurred_at: todayYYYYMMDD(),
-      category: ""
-    })
-  }
-
   const handleDetailedAddTransactionSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!recentAccount?.id) return
+    if (!recentAccount?.id) {
+      toast.error("Please select an account to add transaction")
+      return
+    }
     createMutation.mutate({
       ...detailedAddTransactionData,
       account_id: recentAccount.id
     })
   }
 
-  const handleQuick = async (e: any) => {
+  const handleQuickAddTransactionSubmit = async (e: any) => {
     e.preventDefault()
-    if (!quickNote) return
-    if (!quickAmount) return
-    if (!recentAccount.id) return
+
+    if (!recentAccount?.id) {
+      toast.error("Please select an account to add transaction")
+      return
+    }
  
     quickAddMutation.mutate({
-      account_id: recentAccount.id,
-      amount: quickAmount,
-      note: quickNote
+      ...quickAddTransactionData,
+      account_id: recentAccount.id
     })
   }
 
@@ -280,21 +331,26 @@ export default function TransactionsPage() {
           </div>
 
           <form
-            onSubmit={handleQuick}
+            onSubmit={handleQuickAddTransactionSubmit}
             className="mt-6 flex flex-col gap-3 sm:flex-row"
           >
             {/* Note */}
             <input
-              value={quickNote}
-              onChange={(e) => setQuickNote(e.target.value)}
+              value={quickAddTransactionData.note}
+              onChange={(e) => handleQuickAddTransactionDataChange("note", e.target.value)}
               placeholder="e.g. Starbucks"
+              maxLength={maxChars}
               className="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
             />
 
+            <div className="mt-1 text-right text-xs text-slate-500">
+              {quickAddRemainingCharacters} characters left
+            </div>
+
             {/* Amount */}
             <input
-              value={quickAmount}
-              onChange={(e) => setQuickAmount(e.target.value)}
+              value={quickAddTransactionData.amount}
+              onChange={(e) => handleQuickAddTransactionDataChange("amount", e.target.value)}
               inputMode="decimal"
               placeholder="-5.45"
               className="w-full sm:w-40 rounded-xl border border-slate-300 px-3 py-2.5 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
@@ -384,8 +440,13 @@ export default function TransactionsPage() {
                 value={detailedAddTransactionData.note}
                 onChange={(e) => handleDetailedAddTransactionDataChange("note", e.target.value)}
                 placeholder="Optional"
+                maxLength={maxChars}
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
+
+              <div className="mt-1 text-right text-xs text-slate-500">
+                {detailedAddRemainingCharacters} characters left
+              </div>
             </div>
 
             <div className="xl:col-span-6 flex items-center gap-3 pt-1">

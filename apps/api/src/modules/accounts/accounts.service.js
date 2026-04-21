@@ -21,6 +21,15 @@ export async function putAccount(user_id, account_id, body) {
 }
 
 export async function deleteAccount(user_id, account_id) {
+
+    const account = await accountsRepo.getAccount(user_id, account_id)
+
+    if (account._count.transactions > 0) {
+        const error = new Error("Cannot delete account with existing transactions")
+        error.status = 400
+        throw error
+    }
+
     await accountsRepo.deleteAccount(user_id, account_id)
 }
 

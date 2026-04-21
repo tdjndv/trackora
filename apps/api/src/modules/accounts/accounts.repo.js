@@ -18,7 +18,12 @@ export async function createAccount(id, body) {
 
 export async function getAccount(user_id, account_id) {
     return await prisma.account.findFirst({
-        where: {id: account_id, user_id: user_id}
+        where: {id: account_id, user_id: user_id},
+        include: {
+            _count: {
+                select: {transactions: true}
+            }
+        }
     })
 }
 

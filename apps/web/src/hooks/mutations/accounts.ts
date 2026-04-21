@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createAccount, deleteAccount, putAccount, setRecentAccount } from "../../api/accounts"
 
+import {toast} from "sonner"
+
 export function useCreateAccountMutation(func?: () => void) {
     const queryClient = useQueryClient()
 
@@ -22,6 +24,9 @@ export function useDeleteAccountMutation(func?: () => void) {
             queryClient.invalidateQueries({ queryKey: ["accounts"] })
             func?.()
         },
+        onError: (error: any) => {
+            toast.error(error.message)
+        }
     })
 }
 

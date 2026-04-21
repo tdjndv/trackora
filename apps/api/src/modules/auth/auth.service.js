@@ -11,7 +11,7 @@ export async function signUp({email, password, confirm}) {
 
     const existing = await authRepo.findByEmail(email)
     if (existing) {
-        const e = new Error("Email already exists")
+        const e = new Error("Email already exists, please sign in")
         e.status = 409
         throw e
     }

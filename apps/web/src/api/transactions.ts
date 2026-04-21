@@ -30,17 +30,6 @@ export async function listTransactions(params?: {
     return res.data as PaginatedResponse<TransactionDTO>
 }
 
-export async function createTransaction(input: {
-    account_id: string
-    amount: string
-    note: string
-    category: string
-    occurred_at: string
-}) {
-    const res = await api.post("/transactions", input)
-    return res.data as TransactionDTO
-}
-
 export async function putTransaction(input: {
   id: string
   account_id: string
@@ -67,7 +56,43 @@ export async function deleteTransaction(input: { id: string }) {
   return input.id
 }
 
+export async function createTransaction(input: {
+  account_id: string
+  amount: string
+  note: string
+  category: string
+  occurred_at: string
+}) {
+  try {
+    const payload = {
+      ...input,
+      note: input.note?.trim() === "" ? undefined : input.note.trim(),
+    }
+
+    const res = await api.post("/transactions", payload)
+    return res.data as TransactionDTO
+  } catch (error: any) {
+    const data = error.response?.data
+
+    throw {
+      message: data?.message,
+      issues: data?.issues,
+      status: error.response?.status,
+    }
+  }
+}
+
 export async function quickAddTransaction(input: {account_id: string; note: string; amount: string}) {
-  const res = await api.post("/transactions/quick_add", input)
-  return res.data as TransactionDTO
+  try {
+    const res = await api.post("/transactions/quick_add", input)
+    return res.data as TransactionDTO
+  } catch(error: any) {
+    const data = error.response?.data
+
+    throw {
+      message: data.message,
+      issues: data.issues,
+      status: error.response?.status
+    }
+  }
 }

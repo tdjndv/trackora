@@ -36,8 +36,18 @@ export async function putAccount(input: {
 }
 
 export async function deleteAccount(input: {id: string}) {
-    await api.delete(`/accounts/${input.id}`)
-    return input.id
+    try {
+        await api.delete(`/accounts/${input.id}`)
+        return input.id
+    } catch(error: any) {
+        const data = error.response?.data
+
+        throw {
+            message: data.message,
+            issues: undefined,
+            status: error.response?.status
+        }
+    }
 }
 
 export async function getRecentAccount() {
