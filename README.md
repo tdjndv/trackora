@@ -1,31 +1,21 @@
 # Trackora 💰
 
-A production-ready full-stack personal finance platform that enables users to track expenses, analyze spending behavior, and gain AI-powered financial insights. Designed with scalable architecture, secure authentication, and automated cloud deployment.
-
-👉 **Live App:** https://trackora.org
-👉 **GitHub:** https://github.com/tdjndv/trackora
+A fullstack expanse tracking platform to help users manage transactions, analyze spending patterns.
 
 ---
 
-## 🌟 What Makes Trackora Unique
-
-* ⚡ **AI-powered Quick Add**: Users can enter natural text (e.g., “lunch at McDonald’s $12”), and the system automatically infers category, amount, and type
-* 🧠 Combines traditional finance tracking with **AI-driven insights and automation**
-* 🏗️ Built with **production-level architecture and deployment pipeline**, not just a demo app
-* 🚀 Optimized for performance using **caching and modern data synchronization strategies**
+## Objective
+The primary goal of the project was to explore the design and
+implementation of fullstack web application using common software
+engineering practices, including frontend async, global states management, layered backend architecture, caching, containerization, and automated deployment.
 
 ---
 
-## 🚀 Key Features
-
-* 🔐 Secure authentication using JWT stored in HTTP-only cookies
-* 💸 Expense and income tracking with full CRUD operations
-* ⚡ AI-powered **Quick Add transaction parsing**
-* 📊 Real-time financial analytics and spending insights
-* ⚡ Optimized data fetching and caching with TanStack Query
-* 🧠 AI-generated financial insights via OpenAI API
-* 💳 Stripe integration for subscription-based features
-* 📱 Responsive, production-ready UI
+## Core Features
+* Authentication and authroization using JWT sessions
+* Expense and income CRUD functionality
+* AI powered transaction parsing
+* Reponsive user interface (pagination)
 
 ---
 
@@ -35,6 +25,7 @@ A production-ready full-stack personal finance platform that enables users to tr
 
 * React
 * TanStack Query
+* Redux
 
 **Backend**
 
@@ -65,26 +56,6 @@ A production-ready full-stack personal finance platform that enables users to tr
 * Leveraged **Redis caching** to reduce database load and improve response times
 * Managed frontend server-state with **TanStack Query** for efficient caching, refetching, and synchronization
 * Built AI-powered parsing logic to transform unstructured user input into structured financial data
-
----
-
-## ⚡ Performance & Scalability
-
-* Reduced redundant API calls using intelligent caching strategies
-* Improved data synchronization with client-side caching (TanStack Query)
-* Optimized backend response times with Redis caching
-* Containerized application using Docker for consistent environments
-* Designed backend layers to support future scaling and feature expansion
-
----
-
-## 🚀 Deployment & DevOps
-
-* Deployed on Amazon EC2 using Docker containers
-* Implemented CI/CD pipeline with GitHub Actions
-
-  * Automated build and deployment on push to main branch
-* Environment-based configuration using secure environment variables
 
 ---
 
@@ -163,47 +134,6 @@ GET /transactions?page=1&limit=10
   "total": 125
 }
 ```
-
----
-
-## ⚔️ Challenges & Solutions
-
-* **Maintaining frontend-backend data consistency**
-  → Solved using TanStack Query for caching and refetching
-
-* **Scaling backend structure beyond simple CRUD**
-  → Introduced service/repository layers for clean separation of concerns
-
-* **Secure authentication handling**
-  → Used HTTP-only cookies instead of localStorage
-
-* **Transforming unstructured user input into structured data**
-  → Implemented AI-based parsing for the Quick Add feature
-
-* **Automating deployment**
-  → Built CI/CD pipeline with Docker and GitHub Actions
-
----
-
-## 🔮 Future Improvements
-
-* Budget planning and financial goal tracking
-* Advanced analytics and forecasting
-* Improved test coverage (unit + integration)
-* Mobile application
-
----
-
-## 📌 Highlights
-
-Trackora demonstrates:
-
-* Production-level full-stack development
-* Scalable backend architecture and clean code organization
-* Secure authentication and API design
-* Cloud deployment and CI/CD automation
-* Integration with real-world services (Stripe, OpenAI)
-* AI-powered user experience improvements
 
 ---
 
