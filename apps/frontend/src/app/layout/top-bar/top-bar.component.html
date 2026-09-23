@@ -1,0 +1,67 @@
+<header class="top-bar">
+  <div class="left">
+    <a class="brand" routerLink="/">Trackora</a>
+
+    @if (isLoggedIn()) {
+      <nav>
+        <a routerLink="/accounts" routerLinkActive="active">Accounts</a>
+        <a routerLink="/transactions" routerLinkActive="active">Transactions</a>
+      </nav>
+    }
+  </div>
+
+  @if (isLoggedIn()) {
+    <div class="right">
+      @if (accounts().length > 0) {
+        <div class="account-picker">
+          <button
+            type="button"
+            class="trigger"
+            [class.is-open]="open()"
+            (click)="toggle()"
+            [attr.aria-expanded]="open()"
+          >
+            @if (selected(); as account) {
+              <span class="trigger-text">
+                <span class="trigger-name">{{ account.name }}</span>
+                <span class="trigger-meta">
+                  {{ typeLabels[account.type] }} · {{ account.currency }}
+                </span>
+              </span>
+            } @else {
+              <span class="trigger-name">Select account</span>
+            }
+            <span class="chevron" aria-hidden="true">▾</span>
+          </button>
+
+          @if (open()) {
+            <ul class="panel">
+              @for (account of accounts(); track account.id) {
+                <li>
+                  <button
+                    type="button"
+                    class="item"
+                    [class.current]="account.id === selected()?.id"
+                    (click)="choose(account.id)"
+                  >
+                    <span class="item-name">{{ account.name }}</span>
+                    <span class="item-meta">
+                      <span class="badge" [attr.data-type]="account.type">
+                        {{ typeLabels[account.type] }}
+                      </span>
+                      <span class="currency">{{ account.currency }}</span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      <button type="button" class="sign-out" (click)="signOut()">
+        Sign out
+      </button>
+    </div>
+  }
+</header>

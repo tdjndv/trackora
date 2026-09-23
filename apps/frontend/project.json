@@ -14,6 +14,7 @@
         "outputPath": "dist/apps/frontend",
         "browser": "apps/frontend/src/main.ts",
         "tsConfig": "apps/frontend/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
         "assets": [
           {
             "glob": "**/*",
@@ -56,6 +57,10 @@
         "development": {
           "buildTarget": "frontend:build:development"
         }
+      },
+      "dependsOn": ["backend:serve"],
+      "options": {
+        "proxyConfig": "apps/frontend/proxy.conf.json"
       }
     },
     "lint": {

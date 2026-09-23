@@ -1,0 +1,53 @@
+<!-- apps/frontend/src/app/features/transactions/transactions.component.html -->
+<section class="transactions">
+  @if (selectedAccount(); as account) {
+    <h1>{{ account.name }}</h1>
+
+    <app-create-transaction [accountId]="account.id" (created)="onCreated()" />
+
+    <form class="filters" [formGroup]="form">
+      <input
+        type="search"
+        formControlName="search"
+        placeholder="Search descriptions…"
+      />
+
+      <select formControlName="type">
+        <option value="">All types</option>
+        @for (type of types; track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+
+      <select formControlName="category">
+        <option value="">All categories</option>
+        @for (category of categories; track category) {
+          <option [value]="category">{{ category }}</option>
+        }
+      </select>
+
+      <button type="button" (click)="clearFilters()">Clear</button>
+    </form>
+
+    @if (loading()) {
+      <p>Loading…</p>
+    } @else if (error()) {
+      <p class="error">{{ error() }}</p>
+    } @else if (transactions().length === 0) {
+      <p>No transactions match.</p>
+    } @else {
+      <ul>
+        @for (tx of transactions(); track tx.id) {
+          <li>
+            <app-transaction-row
+              [transaction]="tx"
+              [currency]="account.currency"
+            />
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <p>Select an account to see its transactions.</p>
+  }
+</section>

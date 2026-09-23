@@ -1,0 +1,154 @@
+/* apps/frontend/src/app/features/transactions/transaction-row/transaction-row.component.css */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  background: white;
+}
+
+.row.editing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+  border-color: #2d6cdf;
+  background: #fbfcff;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.description {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #1a1a1a;
+}
+
+.amount.income {
+  color: #1e7a45;
+}
+
+/* actions */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.actions button {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: #555;
+  cursor: pointer;
+}
+
+.actions button:hover:not(:disabled) {
+  background: #f5f5f5;
+  color: #1a1a1a;
+}
+
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actions button.primary {
+  background: #2d6cdf;
+  border-color: #2d6cdf;
+  color: white;
+}
+
+.actions button.primary:hover:not(:disabled) {
+  background: #2559b8;
+  color: white;
+}
+
+.actions button.danger {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: white;
+}
+
+.actions button.danger:hover:not(:disabled) {
+  background: #a33224;
+  color: white;
+}
+
+.confirm-text {
+  font-size: 0.8125rem;
+  color: #c0392b;
+}
+
+/* edit form */
+
+.edit-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.edit-line input,
+.edit-line select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
+.edit-line input:focus,
+.edit-line select:focus {
+  outline: 2px solid #2d6cdf;
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.edit-line .grow {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.amount-input {
+  width: 7rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.edit-line .actions {
+  margin-left: auto;
+}
+
+.error {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: #c0392b;
+}

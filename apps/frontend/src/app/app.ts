@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { NxWelcome } from './nx-welcome';
+import { RouterModule, RouterOutlet } from '@angular/router';
+import { TopBarComponent } from './layout/top-bar/top-bar.component';
 
 @Component({
-  imports: [NxWelcome, RouterModule],
+  imports: [RouterOutlet, TopBarComponent],
   selector: 'app-root',
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+  template: `
+    <app-top-bar />
+    <router-outlet />
+  `,
 })
-export class App {
-  protected title = 'frontend';
-}
+export class App {}

@@ -1,0 +1,57 @@
+<!-- create-transaction.component.html -->
+<form class="create-transaction" [formGroup]="form" (ngSubmit)="submit()">
+  <h2>New transaction</h2>
+
+  <div class="row">
+    <label class="grow">
+      Description <span class="optional">(optional)</span>
+      <input
+        type="text"
+        formControlName="description"
+        placeholder="e.g. Groceries"
+      />
+    </label>
+
+    <label>
+      Amount
+      <input
+        type="text"
+        inputmode="decimal"
+        formControlName="amount"
+        placeholder="0.00"
+      />
+    </label>
+  </div>
+
+  @if (form.controls.amount.touched && form.controls.amount.invalid) {
+    <p class="field-error">Enter an amount like 42.50</p>
+  }
+
+  <div class="row">
+    <label class="grow">
+      Type
+      <select formControlName="type">
+        @for (type of types; track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="grow">
+      Category
+      <select formControlName="category">
+        @for (category of categories; track category) {
+          <option [value]="category">{{ category }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (error()) {
+    <p class="form-error">{{ error() }}</p>
+  }
+
+  <button type="submit" [disabled]="loading()">
+    {{ loading() ? 'Saving…' : 'Add transaction' }}
+  </button>
+</form>

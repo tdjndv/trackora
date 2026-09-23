@@ -1,102 +1,173 @@
 # Trackora
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A personal finance tracker. Multiple accounts, each in its own currency, with transactions you can filter, edit and delete.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+**[Live demo →](http://54.87.62.235)**
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+Angular 22 · NestJS 11 · MySQL 8.4 · TypeORM · Nx monorepo · Docker
 
-## Run tasks
+---
 
-To run the dev server for your app, use:
+## What's in here
 
-```sh
-npx nx serve frontend
+**JWT authentication end to end.** Passwords hashed with bcrypt at cost 12, tokens signed on sign-in and sign-up, and a global guard that protects every route unless it carries `@Public()`. Sign-in runs bcrypt against a dummy hash when the email doesn't exist, so response time doesn't leak whether an account is registered.
+
+**Ownership enforced at the query layer.** Every read and write is scoped by the `sub` claim from the token — an account lookup is `where: { id, userId }`, and a transaction's owner is verified through a join to its account. Requesting someone else's row returns 404, not 403, so the response doesn't confirm the id exists.
+
+**Money stored as integer cents.** `bigint` columns, never floats. Conversion happens once at the form boundary and formatting once at display, through `Intl.NumberFormat` so each account renders in its own currency.
+
+**Filters live in the URL.** Type, category and description search are query params, debounced on input, so a filtered view is shareable and survives a refresh. The URL is the single source of truth — the form writes to it, and a signal reads back from it to trigger the fetch.
+
+**Signals throughout the frontend.** Shared state (the account list, the selected account, the transaction list) lives in root-provided services as signals. Selecting a different account in the top bar re-runs an `effect` that refetches transactions, with no event wiring between components.
+
+**Schema managed by migrations.** `synchronize` is off; TypeORM applies pending migrations on boot.
+
+**Three containers, one exposed port.** nginx serves the built Angular bundle and proxies `/api` to Nest over Docker's internal network. The API and MySQL aren't reachable from outside.
+
+---
+
+## API
+
+All routes are prefixed `/api`. Everything except sign-in and sign-up requires `Authorization: Bearer <token>`.
+
+### Auth
+
+| Method | Route | Body | Returns |
+|---|---|---|---|
+| `POST` | `/auth/signup` | `{ email, password }` | `201` · `{ access_token }` |
+| `POST` | `/auth/signin` | `{ email, password }` | `200` · `{ access_token }` |
+| `GET` | `/profile` | — | the decoded token payload |
+| `GET` | `/health` | — | liveness check |
+
+Passwords are 8–72 characters. A duplicate email returns `409`; bad credentials return `401` with the same message either way.
+
+### Accounts
+
+| Method | Route | Body | Returns |
+|---|---|---|---|
+| `POST` | `/accounts` | `{ name, type, currency }` | `201` · the created account |
+| `GET` | `/accounts` | — | the signed-in user's accounts |
+
+`type` is one of `cash`, `credit_card`, `checkings`, `savings`. `currency` is validated against ISO 4217. Account names are unique per user — a collision returns `409`.
+
+### Transactions
+
+| Method | Route | Body / params | Returns |
+|---|---|---|---|
+| `POST` | `/transactions` | `{ description?, amountCents, type, category, accountId }` | `201` · the created transaction |
+| `GET` | `/transactions` | `?accountId=&type=&category=&search=` | matching transactions, newest first |
+| `PATCH` | `/transactions/:id` | any subset of the create fields | `200` · the updated transaction |
+| `DELETE` | `/transactions/:id` | — | `204` |
+
+`type` is `Income` or `Expense`. `category` is one of `Grocery`, `Travel`, `Food`, `Rent`, `Purchase`, `Transfer`, `Other`. `accountId` is deliberately not patchable — moving a transaction between accounts would need a second ownership check on the destination.
+
+```bash
+TOKEN=$(curl -s -X POST localhost/api/signin \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"your-password"}' | jq -r .access_token)
+
+curl -X POST localhost/api/accounts \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"Chequing","type":"checkings","currency":"CAD"}'
+
+curl "localhost/api/transactions?accountId=$ID&type=Expense&search=groc" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-To create a production bundle:
+---
 
-```sh
-npx nx build frontend
+## Data model
+
+```
+users ──< accounts ──< transactions
 ```
 
-To see all available targets to run for a project, run:
+A user has many accounts; an account has many transactions. Both foreign keys cascade on delete, so removing a user removes everything below it. `accounts` carries a composite unique index on `(userId, name)`.
 
-```sh
-npx nx show project frontend
+Amounts are `bigint` cents. Timestamps are `datetime(6)` — microsecond precision, so two rows created in the same second still sort deterministically.
+
+---
+
+## Running it
+
+### Docker (the whole stack)
+
+```bash
+cp .env.example .env.docker     # then fill in DB_PASSWORD and JWT_SECRET
+docker compose up -d --build
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+Generate real values rather than reusing the examples:
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/angular:app demo
+```bash
+openssl rand -base64 24    # DB_PASSWORD  (must match MYSQL_PASSWORD in compose.yaml)
+openssl rand -base64 48    # JWT_SECRET
 ```
 
-To generate a new library, use:
+The app is on `http://localhost`. nginx serves the frontend and proxies `/api` to the backend; neither the API nor MySQL publishes a port.
 
-```sh
-npx nx g @nx/angular:lib mylib
+### Local development
+
+```bash
+docker compose up -d db                       # MySQL on 127.0.0.1:3307
+npx nx run-many -t serve -p frontend backend  # :4200 and :3000
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+The Angular dev server proxies `/api` to port 3000, so there's no CORS configuration in either environment.
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
+```
+DB_HOST=localhost
+DB_PORT=3307
+DB_USER=trackora
+DB_PASSWORD=...
+DB_NAME=trackora
+JWT_SECRET=...
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+### Migrations
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
+```bash
+npm run migration:generate -- apps/backend/src/migrations/DescribeTheChange
+npm run migration:run
+npm run migration:show
+npm run migration:revert
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Migration classes are imported explicitly in `apps/backend/src/app/config/typeorm.config.ts`. A glob won't work — webpack tree-shakes files nothing imports, so a new migration must be added to that array or it will silently never run.
 
-## Install Nx Console
+---
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+## Layout
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```
+apps/
+  backend/src/
+    app/
+      auth/          guard, decorators, sign-in and sign-up
+      users/         entity, service
+      accounts/      entity, service, controller, dto
+      transactions/  entity, service, controller, dto
+      config/        TypeORM configuration
+    migrations/
+    data-source.ts   standalone DataSource for the CLI
+  frontend/src/app/
+    core/            auth and data services, interceptors, route guard
+    features/        home, sign-in, sign-up, accounts, transactions
+    layout/          top bar with the account picker
+```
 
-## Useful links
+`nx graph` draws the dependency graph. `nx affected -t test lint` runs only what a change touched.
 
-Learn more:
+---
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Notes and trade-offs
 
-And join the Nx community:
+**Tokens live in `localStorage`.** Simple, survives a refresh, and vulnerable to XSS in principle. httpOnly cookies with a refresh-token rotation would be the hardened version.
 
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+**No refresh tokens.** Access tokens are short-lived and an expired one signs you out via a response interceptor that catches `401`. A silent refresh would be the next step.
+
+**Accounts are immutable.** Deliberate — currency can't change once transactions are denominated in it, and type is close to identity. Rename and archive are the useful operations, and neither is built yet.
+
+**Filtering is server-side; there's no pagination.** Fine at this size, and the shape is ready for `LIMIT`/`OFFSET` when it isn't.
+
+**A transfer is two rows.** `Transfer` is a category, so the two halves of a transfer are an `Expense` and an `Income` with nothing linking them. A `transferGroupId` would pair them.

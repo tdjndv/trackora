@@ -1,0 +1,84 @@
+<!-- apps/frontend/src/app/features/transactions/transaction-row/transaction-row.component.html -->
+@if (editing()) {
+  <form class="row editing" [formGroup]="form" (ngSubmit)="save()">
+    <div class="edit-line">
+      <input
+        class="grow"
+        type="text"
+        formControlName="description"
+        placeholder="Description (optional)"
+      />
+      <input
+        class="amount-input"
+        type="text"
+        inputmode="decimal"
+        formControlName="amount"
+      />
+    </div>
+
+    <div class="edit-line">
+      <select formControlName="type">
+        @for (type of types; track type) {
+          <option [value]="type">{{ type }}</option>
+        }
+      </select>
+
+      <select formControlName="category">
+        @for (category of categories; track category) {
+          <option [value]="category">{{ category }}</option>
+        }
+      </select>
+
+      <div class="actions">
+        <button type="submit" class="primary" [disabled]="saving()">
+          {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+        <button type="button" (click)="cancelEdit()" [disabled]="saving()">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    @if (form.controls.amount.touched && form.controls.amount.invalid) {
+      <p class="error">Enter an amount like 42.50</p>
+    }
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+  </form>
+} @else {
+  <div class="row">
+    <div class="left">
+      <span class="description">{{ transaction().description || '—' }}</span>
+      <span class="category">{{ transaction().category }}</span>
+    </div>
+
+    <span class="amount" [class.income]="transaction().type === 'Income'">
+      {{ formattedAmount() }}
+    </span>
+
+    <div class="actions">
+      @if (confirmingDelete()) {
+        <span class="confirm-text">Delete?</span>
+        <button
+          type="button"
+          class="danger"
+          (click)="remove()"
+          [disabled]="saving()"
+        >
+          Yes
+        </button>
+        <button type="button" (click)="confirmingDelete.set(false)">No</button>
+      } @else {
+        <button type="button" (click)="startEdit()">Edit</button>
+        <button type="button" (click)="confirmingDelete.set(true)">
+          Delete
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+}

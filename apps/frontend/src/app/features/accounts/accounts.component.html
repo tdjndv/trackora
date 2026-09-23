@@ -1,0 +1,23 @@
+<!-- accounts.component.html -->
+<section class="accounts">
+  <h1>Accounts</h1>
+
+  <app-create-account />
+
+  @if (loading()) {
+    <p>Loading…</p>
+  } @else if (error()) {
+    <p class="error">{{ error() }}</p>
+  } @else if (accounts().length === 0) {
+    <p>No accounts yet.</p>
+  } @else {
+    <ul>
+      @for (account of accounts(); track account.id) {
+        <li>
+          <span class="name">{{ account.name }}</span>
+          <span class="meta">{{ account.type }} · {{ account.currency }}</span>
+        </li>
+      }
+    </ul>
+  }
+</section>

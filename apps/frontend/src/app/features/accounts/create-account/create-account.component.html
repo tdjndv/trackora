@@ -1,0 +1,38 @@
+<!-- create-account.component.html -->
+<form class="create-account" [formGroup]="form" (ngSubmit)="submit()">
+  <h2>New account</h2>
+
+  <label>
+    Name
+    <input type="text" formControlName="name" placeholder="e.g. Chequing" />
+  </label>
+  @if (form.controls.name.touched && form.controls.name.invalid) {
+    <p class="field-error">Enter a name</p>
+  }
+
+  <label>
+    Type
+    <select formControlName="type">
+      @for (type of accountTypes; track type) {
+        <option [value]="type">{{ type }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    Currency
+    <select formControlName="currency">
+      @for (code of currencies; track code) {
+        <option [value]="code">{{ code }}</option>
+      }
+    </select>
+  </label>
+
+  @if (error()) {
+    <p class="form-error">{{ error() }}</p>
+  }
+
+  <button type="submit" [disabled]="loading()">
+    {{ loading() ? 'Creating…' : 'Create account' }}
+  </button>
+</form>
