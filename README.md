@@ -2,7 +2,7 @@
 
 A personal finance tracker. Multiple accounts, each in its own currency, with transactions you can filter, edit and delete.
 
-**[Live demo →](http://54.87.62.235)**
+## Tech stack
 
 Angular 22 · NestJS 11 · MySQL 8.4 · TypeORM · Nx monorepo · Docker
 
